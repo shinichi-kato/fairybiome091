@@ -5,8 +5,14 @@ import Box from '@mui/material/Box';
 import ProTip from '../components/ProTip';
 import Link from '../components/Link';
 import Copyright from '../components/Copyright';
+import { initializeApp } from "firebase/app";
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 export default function Index() {
+
+
   return (
     <Container maxWidth="sm">
       <Box sx={{ my: 4 }}>
