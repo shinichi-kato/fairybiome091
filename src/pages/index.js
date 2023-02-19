@@ -1,21 +1,22 @@
-import * as React from 'react';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import ProTip from '../components/ProTip';
-import Link from '../components/Link';
-import Copyright from '../components/Copyright';
-import { initializeFirebaseApp, firebaseApp } from "../firebase";
+import React from 'react';
+import AuthProvider from '../components/Auth/AuthProvider';
+import UserProvider from '../components/User/UserProvider';
+import EcosystemProvider from '../components/Ecosystem/EcosystemProvider';
+import useFirebase from "../useFirebase";
 
-initializeFirebaseApp();
+
 
 export default function Index() {
-
+  const [firebase, firestore] = useFirebase();
 
   return (
+    <AuthProvider firebase={firebase}>
+      <UserProvider firestore={firestore}>
+        <EcosystemProvider>
 
-    <AuthProvider>
-
+          中身
+        </EcosystemProvider>
+      </UserProvider>
     </AuthProvider>
 
   );

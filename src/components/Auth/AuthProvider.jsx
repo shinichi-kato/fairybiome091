@@ -6,30 +6,34 @@ AuthProvider
 
 */
 
-import React, { useReducer, createContext, useEffect } from 'react';
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
+import React, { useReducer, createContext, useEffect, useRef } from 'react';
+import {
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  getAuth
+} from 'firebase/auth';
 
 import AuthDialog from './AuthDialog';
-import Landing from './Landing';
+import Landing from '../Landing/Landing';
 
 export const AuthContext = createContext();
 
-const MEASSAGE_MAP = {
+const MESSAGE_MAP = {
   "auth/user-not-found": "ユーザが登録されていません",
   "auth/wrong-password": "パスワードが違います",
   "auth/invalid-email": "無効なemailアドレスです",
   "auth/invalid-password": "パスワードは6文字以上必要です",
   "auth/email-already-exists": "このemailは登録済みです",
+  "_same_password_required_": "パスワードが一致していません",
 };
 
 const initialState = {
-  app: {
-    auth: null,
-    firebase: null,
-  },
+  auth: null,
+  firebase: null,
   uid: null,
   authState: "notYet",
-  message: "",
+  message: null,
 };
 
 function reducer(state, action) {
@@ -42,6 +46,7 @@ function reducer(state, action) {
   timeout     　　　　　　　　　　　　　firebaseが応答しない
   ------------------------------------------------------------
   */
+ console.log(`auth - ${action.type}`)
   switch (action.type) {
     case 'init': {
       return {
@@ -54,6 +59,7 @@ function reducer(state, action) {
     case 'logoff': {
       return {
         ...state,
+        uid:null,
         authState: 'logoff'
       }
     }
@@ -69,14 +75,30 @@ function reducer(state, action) {
     case 'timeout': {
       return {
         ...state,
-        authState: 'logoff'
+        authState: 'logoff',
+        message: 'firebaseに接続できません'
       }
     }
 
     case 'error': {
+      let message;
+      if(action.errorCode in MESSAGE_MAP){
+        message = MESSAGE_MAP[action.errorCode]
+      }else{
+        message = action.errorCode
+      }
       return {
         ...state,
-        message: MEASSAGE_MAP[action.errorCode]
+        uid: null,
+        message: message
+      }
+    }
+    case 'authOk': {
+      return {
+        ...state,
+        uid: action.uid,
+        authState: "authOk",
+        message: null,
       }
     }
 
@@ -85,7 +107,7 @@ function reducer(state, action) {
   }
 }
 
-export default function AuthProvider(props) {
+export default function AuthProvider({ firebase, children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const unsubscribeRef = useRef();
 
@@ -102,7 +124,7 @@ export default function AuthProvider(props) {
         auth: auth
       });
 
-      unsubscribeRef.current = onAuthStateChange(auth, user => {
+      unsubscribeRef.current = onAuthStateChanged(auth, user => {
         if (user) {
           dispatch({
             type: "authOk",
@@ -115,22 +137,17 @@ export default function AuthProvider(props) {
         }
       });
 
-      let id = setTimeout(() => { initialAuthTimeout(id) }, 1000);
+      // let id = setTimeout(() => {
+      //   dispatch({ type: 'timeout' });
+      //   clearTimeout(id);
+      // }, 1000);
     }
 
     return () => {
       if (unsubscribeRef.current) { unsubscribeRef.current(); }
     }
 
-  }, [firebase, firestore]);
-
-  function initialAuthTimeout(id) {
-    if (!state.auth.currentUser) {
-      dispatch({ type: 'timeout' });
-
-    }
-    clearTimeout(id);
-  }
+  }, [firebase]);
 
   // -----------------------------------------------------------
   //
@@ -139,16 +156,47 @@ export default function AuthProvider(props) {
   // パスワードが短すぎる等)の場合入力し直しを促す
   //
 
-  function createUser(email, password) {
-    createUserWithEmailAndPassword(state.auth, email, password)
-      .then(
-        userCredential => {
+  function handleCreateUser(email, password1, password2) {
+    if (password1 === password2) {
+      createUserWithEmailAndPassword(state.auth, email, password1)
+        // .then(
+        //   userCredential => {
+        //     dispatch({
+        //       type: 'ok',
+        //       uid: userCredential.uid
+        //     })
+        //   }
+        // )
+        .catch((error) => {
           dispatch({
-            type: 'ok',
-            uid: userCredential.uid
+            type: 'error',
+            errorCode: error.code
           })
-        }
-      )
+        });
+    } else {
+      dispatch({
+        type: 'error',
+        errorCode: '_same_password_required_'
+      })
+    }
+  }
+
+  // -----------------------------------------------------------
+  //
+  // ログイン
+  // emailとpasswordを用いてログインを試みる
+  //
+
+  function handleSignIn(email, password) {
+    signInWithEmailAndPassword(state.auth, email, password)
+      // .then(
+      //   userCredential => {
+      //     dispatch({
+      //       type: 'ok',
+      //       uid: userCredential.uid
+      //     })
+      //   }
+      // )
       .catch((error) => {
         dispatch({
           type: 'error',
@@ -159,20 +207,23 @@ export default function AuthProvider(props) {
 
   return (
     <AuthContext.Provider
-      value={{}}
+      value={{
+        uid:state.uid
+      }}
     >
       {state.authState === 'notYet'
         ?
         <Landing />
         :
-        state.authState === 'logoff'
+        state.authState === 'authOk'
           ?
+          children
+          :
           <AuthDialog
-            createUser={createUser}
+            createUser={handleCreateUser}
+            signIn={handleSignIn}
             message={state.message}
           />
-          :
-          props.children
       }
     </AuthContext.Provider>
   )
