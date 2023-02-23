@@ -1,0 +1,41 @@
+{
+    "description": "biomebot参照モデル",
+    "updatedAt": "2022-12-05",
+    "creator": "skato",
+    "avatarDir": "chatbot/avatar/faily-girl/",
+    "backgroundColor": "",
+    "encoder": "BowEncoder",
+    "stateMachine": "BasicStateMachine",
+    "decoder": "HarvestDecoder",
+    "precision": 0.5,
+    "retention": 1,
+    "refractory": 4,
+    "biome": [],
+    "script": [
+        {
+            "intent": "enter",
+            "in": ["こんにちは"],
+            "out": ["こんにちは！"]
+        },
+        {
+            "in":["こんばんは"],
+            "out":["こんばんは〜！"]
+        },
+        {
+            "in": ["{enter_morning}"],
+            "out": ["おはようございます！"]
+        },
+        {
+            "in": ["{enter_noon}"],
+            "out": ["こんにちは！昼ですね"]
+        },
+        {
+            "in": ["{enter_evening}"],
+            "out": ["こんばんは！"]
+        },
+        {
+            "in": ["{enter_night}"],
+            "out": ["もうすっかり夜ですね"]
+        }
+    ]
+}

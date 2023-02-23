@@ -8,21 +8,26 @@ firestoreには以下のユーザ情報を格納する。
 usersコレクション
   displayName
   avatarDir,
-  backgroundColor,
+  backgroundColorIndex,
   logコレクション
     
 */
 import React, { useReducer, createContext, useEffect, useState, useContext } from 'react';
+import { useStaticQuery, graphql } from "gatsby"
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import UserSettingsDialog from './UserSettingsDialog';
 import { AuthContext } from '../Auth/AuthProvider';
 export const UserContext = createContext();
 
-const initialState = {
-  displayName: "",
-  avatarDir: "",
-  backgroundColor: "",
-  userState: "init"
+
+function initialStateFactory(palette) {
+  return {
+    displayName: "",
+    avatarDir: "",
+    backgroundColorIndex: 0,
+    backgroundColorPalette: [...palette],
+    userState: "init"
+  }
 };
 
 function reducer(state, action) {
@@ -30,17 +35,11 @@ function reducer(state, action) {
   switch (action.type) {
     case 'setUser': {
       return {
+        ...state,
         diplayName: action.displayName,
         avatarDir: action.avatarDir,
-        backgroundColor: action.backgroundColor,
+        backgroundColorIndex: action.backgroundColorIndex,
         userState: "ok"
-      }
-    }
-
-    case 'empty': {
-      return {
-        ...initialState,
-        userState: "openDialog"
       }
     }
 
@@ -51,14 +50,37 @@ function reducer(state, action) {
       }
     }
 
+    case 'closeDialog': {
+      return {
+        ...state,
+        userState: "ok"
+      }
+    }
+
     default:
       throw new Error(`invalid action ${action.type}`);
   }
 }
 
 export default function UserProvider({ firestore, children }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const data = useStaticQuery(graphql`
+    query {
+      site {
+        siteMetadata {
+          backgroundColorPalette
+        }
+      }
+    }
+  `);
+
+  const [state, dispatch] = useReducer(
+    reducer,
+    initialStateFactory(data.site.siteMetadata.backgroundColorPalette)
+  );
+
   const [log, setLog] = useState([]);
+
+
 
   const auth = useContext(AuthContext);
 
@@ -72,7 +94,7 @@ export default function UserProvider({ firestore, children }) {
               type: 'setUser',
               displayName: u.displayName,
               avatarDir: u.avatarDir,
-              backgroundColor: u.backgroundColor,
+              backgroundColorIndex: u.backgroundColorIndex,
             })
           } else {
             dispatch({
@@ -91,17 +113,21 @@ export default function UserProvider({ firestore, children }) {
     });
   }
 
-  function changeUserSettings(displayName, avatarDir, backgroundColor) {
+  function handleCloseUserSettings(){
+    dispatch({type: 'closeDialog'})
+  }
+
+  function changeUserSettings(data) {
     dispatch({
       type: 'setUser',
-      diplayName: displayName,
-      avatarDir: avatarDir,
-      backgroundColor: backgroundColor,
+      diplayName: data.displayName,
+      avatarDir: data.avatarDir,
+      backgroundColorIndex: data.backgroundColorIndex,
     });
     setDoc(doc(firestore, "users", auth.uid), {
-      displayName: displayName,
-      avatarDir: avatarDir,
-      backgroundColor: backgroundColor
+      displayName: data.displayName,
+      avatarDir: data.avatarDir,
+      backgroundColorIndex: data.backgroundColorIndex
     }).then(() => {
 
     })
@@ -112,7 +138,7 @@ export default function UserProvider({ firestore, children }) {
       value={{
         displayName: state.displayName,
         avatarDir: state.avatarDir,
-        backgroundColor: state.backgroundColor,
+        backgroundColor: state.backgroundColorPalette[state.backgroundColorIndex],
         log: state.log,
         openUserSetting: openUserSettings
       }}
@@ -120,8 +146,9 @@ export default function UserProvider({ firestore, children }) {
       {state.userState === 'openDialog'
         ?
         <UserSettingsDialog
-          state={state}
+          user={state}
           handleChangeUserSettings={changeUserSettings}
+          handleCancel={handleCloseUserSettings}
         />
         :
         children

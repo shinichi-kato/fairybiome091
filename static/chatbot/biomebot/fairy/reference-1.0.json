@@ -1,0 +1,103 @@
+{
+    "description": "biomebot参照モデル",
+    "updatedAt": "2022-12-05",
+    "creator": "skato",
+    "avatarDir": "/chatbot/avatar/fairy-girl/",
+    "backgroundColor": "#7f2dce",
+    "encoder": "PatternEncoder",
+    "stateMachine": "CentralStateMachine",
+    "decoder": "HarvestDecoder",
+    "precision": 0.5,
+    "retention": 1,
+    "refractory": 4,
+    "biome": [
+        "greeting.json",
+        "w-311-05.json"
+    ],
+    "memory": {
+        "{BOT_NAME}":["アルファ"],
+        "{BOT_NAME_SPOKEN}":["あるふぁさん","アルファさん","アルファ君"],
+        "{YOU}":["君","あなた","お前さん","貴方","あんた"],
+        "{ENTER}":["absent","appear"],
+        "{I}":["私"]
+    },
+    "script": [
+        {
+            "intent": "enter",
+            "in": ["{NOP}"],
+            "out": ["やってきましたよ！"]
+        },
+        {
+            "intent": "absent",
+            "in": ["{NOP}"],
+            "out": ["{NOP}"]
+        },
+        {
+            "intent": "std_by",
+            "in": ["{NOP}"],
+            "out": ["{NOP}"]
+        },
+        {
+            "intent": "summon",
+            "in": ["^{BOT_NAME}[。！？!?]$","^{BOT_NAME_SPOKEN}[。！？!?]$"],
+            "out": ["はーい！"]
+        },
+        {
+            "intent": "appear",
+            "in": ["{NOP}"],
+            "out": ["やってきましたよ！"]
+        },
+        
+        {
+            "intent": "bot_naming",
+            "in": [
+                "[こと|事]?([^、。]+?)って呼んでいい？"
+            ],
+            "out": [
+                "{LAST}でいいですか？"
+            ]
+        },
+        {
+            "intent": "bot_renaming",
+            "in": [
+                "(.+?)(?:だ|で)",
+                "(.+?)って呼んでいい？"
+            ],
+            "out": [
+                "じゃあ {LAST} ？",
+                "{LAST}でいいですか？"
+            ]
+        },
+        {
+            "intent": "bot_confirm",
+            "in": [
+                "^(うん|はい|ええ)。?$",
+                "^そう(だよ|です|)。?$",
+                "^やったー*"
+            ],
+            "out": [
+                "分かりました(笑",
+                "{LAST}です。よろしくね"
+            ]
+        },
+        {
+            "intent": "bot_break",
+            "in": [
+                "やっぱやめ"
+            ],
+            "out": [
+                "？"
+            ]
+        },
+        {
+            "intent": "not_found",
+            "in": [
+                "not_found"
+            ],
+            "out": [
+                "え？","そうなんですか？","うーん","うん","はい","ええ",
+                "もう少し詳しく教えて？", "あはは！"
+            ]
+        }
+    ]
+}

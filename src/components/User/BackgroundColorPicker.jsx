@@ -2,7 +2,6 @@ import React from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import CheckIcon from '@mui/icons-material/Check';
-import { colorPalette } from '../../theme';
 
 const PaletteCell = styled(Box)(({ theme }) => ({
   borderRadius: 6,
@@ -13,14 +12,14 @@ const PaletteCell = styled(Box)(({ theme }) => ({
   margin: theme.spacing(1)
 }));
 
-export default function BackgroundColorPicker({ index, handleSetIndex }) {
-  const cells = colorPalette.map((c, i) => (
+export default function BackgroundColorPicker({ state, handleChangeIndex }) {
+  const cells = state.backgroundColorPalette.map((c, i) => (
     <PaletteCell
       key={i}
       sx={{ backgroundColor: c }}
-      onClick={(e) => handleSetIndex(i)}
+      onClick={(e) => handleChangeIndex(i)}
     >
-      {index === i && <Box><CheckIcon sx={{ color: "#ffffff" }}/></Box>}
+      {state.backgroundColorIndex === i && <Box><CheckIcon sx={{ color: "#ffffff" }}/></Box>}
     </PaletteCell>
   ))
 

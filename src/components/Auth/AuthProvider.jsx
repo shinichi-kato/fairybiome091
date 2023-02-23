@@ -11,7 +11,7 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  getAuth
+  getAuth, signOut
 } from 'firebase/auth';
 
 import AuthDialog from './AuthDialog';
@@ -205,10 +205,20 @@ export default function AuthProvider({ firebase, children }) {
       });
   }
 
+  // -----------------------------------------------------------
+  //
+  // サインアウト
+  //
+
+  function handleSignOut(){
+    signOut(state.auth);
+  }
+
   return (
     <AuthContext.Provider
       value={{
-        uid:state.uid
+        uid:state.uid,
+        handleSignOut: handleSignOut
       }}
     >
       {state.authState === 'notYet'
