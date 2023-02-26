@@ -1,4 +1,4 @@
-import React, { useReducer,useContext } from 'react';
+import React, { useReducer, useContext } from 'react';
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -7,7 +7,7 @@ import Button from '@mui/material/Button';
 import BackgroundColorPicker from './BackgroundColorPicker';
 import AvatarSelector from './AvatarSelector';
 import { StyledInput } from '../StyledInput';
-import {authContext} from '../Auth/AuthProvider';
+import { AuthContext } from '../Auth/AuthProvider';
 
 function isValid(state) {
   return (
@@ -53,7 +53,7 @@ function reducer(state, action) {
     }
 
     case 'changeAvatarDir': {
-      const newState= {
+      const newState = {
         ...state,
         avatarDir: action.avatarDir
       }
@@ -65,7 +65,7 @@ function reducer(state, action) {
     };
 
     case 'changeBackgroundColorIndex': {
-      const newState= {
+      const newState = {
         ...state,
         backgroundColorIndex: action.backgroundColorIndex
       };

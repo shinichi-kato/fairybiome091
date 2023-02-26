@@ -26,6 +26,7 @@ function initialStateFactory(palette) {
     avatarDir: "",
     backgroundColorIndex: 0,
     backgroundColorPalette: [...palette],
+    administrator: false,
     userState: "init"
   }
 };
@@ -95,6 +96,7 @@ export default function UserProvider({ firestore, children }) {
               displayName: u.displayName,
               avatarDir: u.avatarDir,
               backgroundColorIndex: u.backgroundColorIndex,
+              administartor: u.administrator,
             })
           } else {
             dispatch({
@@ -123,11 +125,13 @@ export default function UserProvider({ firestore, children }) {
       diplayName: data.displayName,
       avatarDir: data.avatarDir,
       backgroundColorIndex: data.backgroundColorIndex,
+      administrator: data.administrator,
     });
     setDoc(doc(firestore, "users", auth.uid), {
       displayName: data.displayName,
       avatarDir: data.avatarDir,
-      backgroundColorIndex: data.backgroundColorIndex
+      backgroundColorIndex: data.backgroundColorIndex,
+      administrator: data.administrator,
     }).then(() => {
 
     })
@@ -136,9 +140,11 @@ export default function UserProvider({ firestore, children }) {
   return (
     <UserContext.Provider
       value={{
+        uid: auth.uid,
         displayName: state.displayName,
         avatarDir: state.avatarDir,
         backgroundColor: state.backgroundColorPalette[state.backgroundColorIndex],
+        administrator: state.administrator,
         log: state.log,
         openUserSetting: openUserSettings
       }}

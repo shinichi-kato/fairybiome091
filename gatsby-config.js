@@ -16,6 +16,13 @@ module.exports = {
         path: `${__dirname}/static/user`,
       },
     },
+    {
+      resolve: `gatsby-source-filesystem`,
+      options: {
+        name: `chatbots`,
+        path: `${__dirname}/static/chatbot/biomebot`
+      }
+    }
   ],
   siteMetadata: {
     title: 'BiomeBot ver 0.91',

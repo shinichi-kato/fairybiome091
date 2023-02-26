@@ -1,17 +1,16 @@
 /*
   biomebotエディタ
-  もとのデータは/static/chatbot/biomebotに格納されている。
-  ユーザがアプリを起動したとき、ユーザ用のチャットボットがなければこの中から
-  ランダムに選んだ一つがfirestoreにロードされ、ユーザ用のチャットボットになる。
-  firestore上のチャットボットはこのエディタ画面から編集でき、firestoreに保存できる。
-  firestore上のチャットボットはローカルファイルにダウンロードすることができ、
+  
+  ユーザはindexDB上に保存された自分が所有するチャットボットのデータを
+  このエディタ画面で編集でき、firestore上に保存できる。管理者権限を
+  持つユーザは他のユーザのチャットボットも閲覧・編集できる。
+  編集した結果をfirestoreに保存すると、サブスクライブの機構によって
+  即時他のアプリのチャットボットに反映される。
   
 */
 import React from 'react';
 import AuthProvider from '../components/Auth/AuthProvider';
 import useFirebase from "../useFirebase";
-
-
 
 
 export default function Index() {
