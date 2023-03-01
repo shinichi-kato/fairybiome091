@@ -133,10 +133,10 @@ export default function AuthDialog({ createUser,signIn,message }) {
                   password
                 </InputLabel>
                 <StyledInput
-                  name="password1"
+                  name="password0"
                   type="password"
                   required
-                  id="password1"
+                  id="password0"
                   autoComplete='password'
                 />
               </FormControl>
@@ -148,6 +148,9 @@ export default function AuthDialog({ createUser,signIn,message }) {
               >
                 サインイン
               </Button>
+            </Box>
+            <Box>
+              {message}
             </Box>
             <Box>
               <Link href="#" variant="body2"

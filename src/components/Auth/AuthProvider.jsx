@@ -82,11 +82,13 @@ function reducer(state, action) {
 
     case 'error': {
       let message;
-      if(action.errorCode in MESSAGE_MAP){
-        message = MESSAGE_MAP[action.errorCode]
+      const code = action.error.code;
+      if(action.error.code in MESSAGE_MAP){
+        message = MESSAGE_MAP[code]
       }else{
-        message = action.errorCode
+        message = code
       }
+      console.log(action.error.message);
       return {
         ...state,
         uid: null,
@@ -200,7 +202,7 @@ export default function AuthProvider({ firebase, children }) {
       .catch((error) => {
         dispatch({
           type: 'error',
-          errorCode: error.code
+          error: error
         })
       });
   }
@@ -217,6 +219,7 @@ export default function AuthProvider({ firebase, children }) {
   return (
     <AuthContext.Provider
       value={{
+        email:state.auth ? state.auth.email : null,
         uid:state.uid,
         handleSignOut: handleSignOut
       }}

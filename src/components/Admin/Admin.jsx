@@ -1,10 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useStaticQuery, graphql } from "gatsby"
 
-import { 
+import {
   collection, query, where,
   getCountFromServer,
-  doc, setDoc, 
 } from "firebase/firestore";
 
 import Grid from '@mui/material/Grid';
@@ -13,20 +12,22 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
 import { UserContext } from '../User/UserProvider';
+import { AuthContext } from '../Auth/AuthProvider';
+import { uploadOrigin } from '../../useFirebase';
 
 export default function AdminPage({ firestore }) {
   const user = useContext(UserContext);
+  const auth = useContext(AuthContext);
   const [botCount, setBotCount] = useState(0);
 
   const data = useStaticQuery(graphql`
-    query {
-      allFile(filter: {sourceInstanceName: {eq: "chatbots"}, name: {eq: "main"}}) {
-        nodes {
-          absolutePath
-          relativeDirectory
-        }
+  query {
+    allFile(filter: {sourceInstanceName: {eq: "chatbots"}, name: {eq: "main"}}) {
+      nodes {
+        relativeDirectory
       }
     }
+  }
   `);
 
   useEffect(() => {
@@ -42,7 +43,52 @@ export default function AdminPage({ firestore }) {
   }, [firestore]);
 
   function handleUpload() {
-    const paths = data.allfile.nodes.relativeDirectory
+    /*
+      host上には以下のようにスクリプトが格納されている。
+
+      "fairy/greeting.json"
+      "fairy/w-311-05.json"
+      "fairy/main.json"
+
+      これをfirestore上にコピーする。firestoreでは以下の構造で
+      データを保存する。chatbotコレクションはhostからのコピーで
+      ユーザがチャットボットを新規作成するときはuser_chatbotsに
+      コピーを作る。
+
+      collection chatbot
+      └doc fairy.json
+        └collection biome
+           └doc greeting.json
+             doc w-311-05.json
+      collection user_chatbot
+      └doc {uid}
+        └collection biome
+          └doc ...
+
+      という構造で格納する。最初にmain.jsonをアップロードし、
+      その後main.jsonのbiomeに記述されたスクリプト名に従って
+      アップロードする。
+    */
+
+    const dirs = data.allFile.nodes.map(node=>node.relativeDirectory);
+    (async () => {
+
+      for (let dir of dirs) {
+        /* main.jsonをhostからダウンロード */
+        let data = await fetch(`/chatbot/biomebot/${dir}/main.json`);
+        let main = await data.json();
+        let biome = {};
+
+        for (let cellName of main.biome) {
+          data = await fetch(`/chatbot/biomebot/${dir}/${cellName}`);
+          biome[cellName] = await data.json();
+        }
+        /* firestoreにアップロード */
+        await uploadOrigin(firestore, dir, main, biome);
+        
+
+      }
+    })();
 
   }
 
@@ -55,6 +101,14 @@ export default function AdminPage({ firestore }) {
       }}
     >
       <Grid container spacing={2}>
+        <Grid item xs={12}>
+          {auth.email}
+          <Button
+            onClick={auth.handleSignOut}
+          >
+            signout
+          </Button>
+        </Grid>
         <Grid item xs={8}>
           <Typography variant="body2">
             チャットボットの初期データをサーバにアップロードします。

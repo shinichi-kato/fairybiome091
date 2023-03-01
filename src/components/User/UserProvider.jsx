@@ -35,11 +35,13 @@ function reducer(state, action) {
   console.log(`user - ${action.type}`);
   switch (action.type) {
     case 'setUser': {
+      const u = action.user;
       return {
         ...state,
-        diplayName: action.displayName,
-        avatarDir: action.avatarDir,
-        backgroundColorIndex: action.backgroundColorIndex,
+        diplayName: u.displayName,
+        avatarDir: u.avatarDir,
+        backgroundColorIndex: u.backgroundColorIndex,
+        administrator: u.administrator,
         userState: "ok"
       }
     }
@@ -93,10 +95,7 @@ export default function UserProvider({ firestore, children }) {
             const u = snap.data();
             dispatch({
               type: 'setUser',
-              displayName: u.displayName,
-              avatarDir: u.avatarDir,
-              backgroundColorIndex: u.backgroundColorIndex,
-              administartor: u.administrator,
+              user: u
             })
           } else {
             dispatch({

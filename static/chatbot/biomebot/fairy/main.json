@@ -4,6 +4,7 @@
     "creator": "skato",
     "avatarDir": "/chatbot/avatar/fairy-girl/",
     "backgroundColor": "#7f2dce",
+    "npc": false,
     "encoder": "PatternEncoder",
     "stateMachine": "CentralStateMachine",
     "decoder": "HarvestDecoder",
