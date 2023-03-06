@@ -2,7 +2,7 @@
 FairyBiomeチャット画面
 
   ユーザがアプリを起動したとき、ブラウザにチャットボットのデータがなければ
-  /static/chatbot/biomebot/に格納されているチャットボットの中からランダムに
+  /static/chatbot/Biomebot/に格納されているチャットボットの中からランダムに
   選んだ一つがブラウザにダウンロードされ、firestore上にアップロードされる。
   以降firestore上にアップロードされたチャットボットのデータはサブスクライブ
   する。
@@ -20,9 +20,9 @@ FairyBiomeチャット画面
 import React from 'react';
 import AuthProvider from '../components/Auth/AuthProvider';
 import UserProvider from '../components/User/UserProvider';
-import EcosystemProvider from '../components/Ecosystem/EcosystemProvider';
-import BiomebotProvider from '../components/Biomebot-0.10/BiomebotProvider';
+import Main from '../components/Main/Main';
 import useFirebase from "../useFirebase";
+
 
 
 
@@ -32,11 +32,9 @@ export default function Index() {
   return (
     <AuthProvider firebase={firebase}>
       <UserProvider firestore={firestore}>
-        <EcosystemProvider>
-          <BiomebotProvider>
-            中身
-          </BiomebotProvider>
-        </EcosystemProvider>
+        <Main
+          firestore={firestore}
+        />
       </UserProvider>
     </AuthProvider>
 

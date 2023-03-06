@@ -1,5 +1,5 @@
 /*
-BiomeBot-0.10.0
+Biomebot-0.10.0
 =============================
 
 複数の「心のパート」が相互作用しながら会話を形成するチャットボット
@@ -13,7 +13,7 @@ BiomeBot-0.10.0
 人の行動や発言をトリガーする。
 
 これらの個別の働きをそれぞれシンプルなチャットボットとし、セルと呼ぶ。
-BiomeBotは環境などに応対し会話よりも優先して動作するする一つの
+Biomebotは環境などに応対し会話よりも優先して動作するする一つの
 「mainセル」と会話を司る会話を司る複数の「Biomeセル」で構成される。
 
 チャットボットは内部的にmainモードとbiomeモードがあり、mainモードでは
@@ -110,7 +110,7 @@ Cell                概要
 
 
 # アバター
-チャットボットの状態を表現する有力な手段がアバターで、BiomeBotでは下記の
+チャットボットの状態を表現する有力な手段がアバターで、Biomebotでは下記の
 ようなAvatarを利用する。Avatarは状態機械の中で決められ、状態機械の出力する
 codeに含められる。
 
@@ -140,7 +140,11 @@ Biomebotにはインスタンス固有の情報があり、以下のようなも
 UIデザイン上はUserPanelとFairyPanelのwidthは30%が最小、50%が最大、とする。
 
 ## チャットボットのロード
-
+  各ユーザのチャットボットデータはfirestoreのchatbot_activeコレクションの
+  名前が{uid}になっているものである。それが存在する場合は自動的にロード
+  する。なければchatbot_originコレクションのユーザが所有可能な
+  チャットボットの中からランダムに選んだ一つをコピーし、それをブラウザに
+  ロードする。
 
 */
 
@@ -148,12 +152,182 @@ import React, {
   useEffect, useReducer, useCallback,
   createContext, useContext
 } from 'react';
-import { AuthContext } from "../Auth/AuthProvider";
+import { UserContext } from '../User/UserProvider';
+import { useBiome } from './useBiome';
+import { db } from '../db';
+import { Message } from '../message'
+
 export const BiomebotContext = createContext();
 
-export default function BiomebotProvider(props) {
+const initialState = {
+  status: 'init',
+  url: '',
+  avatarURL: '',
+  avatarSize: 100,
+  backgroundColor: '',
+  botName: '',
+}
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'biomeReady': {
+      return {
+        status: 'biomeLoaded',
+        url: action.url,
+        avatarURL: '',
+        closeness: action.closeness,
+        backgroundColor: action.backgroundColor,
+        botName: action.botName,
+        userId: state.userId,
+      }
+    }
+
+    case 'execute': {
+      return {
+        ...state,
+        status: 'ready',
+        avatarURL: action.avatarURL,
+      }
+    }
+
+    default:
+      throw new Error(`invalid action.type ${action.type}`);
+  }
+}
+
+export default function BiomebotProvider({
+  firestore,
+  botId,
+  handleBotReady,
+  handleBotNotFound, //未実装
+  children
+}) {
+
+  const [biomeState, biomeLoad, biomeUpdate] = useBiome(firestore, botId);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const user = useContext(UserContext);
+
+  useEffect(() => {
+    if (user.uid && biomeState.isReady) {
+      dispatch({
+        type: 'biomeReady',
+        backgroundColor: biomeState.backgroundColor,
+        botName: db.getBotName(),
+      });
+
+      handleBotReady();
+
+    }
+  }, [
+    user.uid,
+    biomeState.isReady,
+    biomeState.backgroundColor,
+    handleBotReady,
+  ]);
+
+  function handleLoad(url) {
+    biomeLoad(url);
+  }
+
+  const handleExecute = useCallback((userMessage, emitter) => {
+    // db.memory辞書に記載された一部の文字列をタグに置き換える。
+    // closure化するのを防ぐため内部で関数定義
+    function _tagging(text, key) {
+      let vals = db.getMemoryValues(key);
+      for (let val of vals) {
+        text = text.replace(val, key);
+      }
+      return text;
+    }
+
+    let text = userMessage.text;
+    text = _tagging(text, '{BOT_NAME_SPOKEN}');
+    text = _tagging(text, '{BOT_NAME}');
+    text = _tagging(text, '{USER_NAME}');
+    text = _tagging(text, '{YOU}');
+    text = _tagging(text, '{I}');
+
+    let code = {
+      intent: userMessage.intent || '*',
+      text: text,
+      owner: 'user',
+    }
+
+    let mode = biomeState.mode;
+    let index = 0;
+    let cell, cellName, retcode;
+
+    while (true) {
+      if (biomeState.order[mode].length <= index) {
+        // order終端にいる
+        // biome終端 -> mainへ。
+        if (mode === 'biome') {
+          mode = 'main';
+          index = 0;
+        } else {
+          // main終端→エラー
+          console.error("mainの状態機械が終了に到達しました。main状態機械は終了しない設計にしてください")
+          index = 0;
+        }
+      }
+
+      cellName = biomeState.order[mode][index];
+      cell = biomeState.spool[cellName];
+      retcode = cell.encoder.retrieve(code);
+      retcode = cell.stateMachine.run(retcode);
+
+      if (retcode.command === 'to_biome') {
+        mode = 'biome';
+        index = 0;
+        continue;
+      } else if (retcode.command === 'to_main') {
+        mode = 'main';
+        index = 0;
+        continue;
+      }
+
+      if (retcode.intent === 'pass') {
+        index++;
+        continue;
+      }
+      break;
+    }
+
+    const avatarURL = `${biomeState.avatarDir}${retcode.avatar}`;
+    biomeUpdate(mode, index);
+    dispatch({ type: 'execute', avatarURL: avatarURL });
+
+    // decode
+    let rettext = cell.decoder.render(retcode);
+    emitter(new Message('speech', {
+      avatarURL: avatarURL,
+      text: rettext,
+      name: state.botName,
+      backgroundColor: biomeState.backgroundColor,
+      person: 'bot'
+    }));
+
+  }, [
+    biomeUpdate,
+    biomeState.order,
+    biomeState.spool,
+    biomeState.mode,
+    biomeState.backgroundColor,
+    biomeState.avatarDir,
+    state.botName,
+  ]);
+
   return (
-    <BiomebotContext.Provider>
+    <BiomebotContext.Provider
+      value={{
+        isReady: biomeState.isReady,
+        load: handleLoad,
+        execute: handleExecute,
+        avatarURL: state.avatarURL,
+        backgroundColor: state.backgroundColor,
+      }}
+    >
+      {children}
     </BiomebotContext.Provider>
   );
 }

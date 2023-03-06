@@ -30,7 +30,12 @@ export default function useFirebase() {
   return [firebase, firestore];
 }
 
-/*
+/* ---------------------------------------------------------------------
+
+  チャットボットデータのインストールとコピー
+
+  ----------------------------------------------------------------------
+
   firestore上では以下の構造でchatbotデータを保持する。
   collection chatbot_origin
   └doc {name}
@@ -65,9 +70,9 @@ export async function uploadOrigin(firestore, name, main, biome) {
   const mainRef = doc(firestore, "chatbot_origin", name);
   batch.set(mainRef, main);
 
-  for (let biomeName of main.biome) {
-    let biomeRef = doc(firestore, "chatbot_origin", name, "biome", biomeName);
-    batch.set(biomeRef, biome[biomeName]);
+  for (let cellName of main.biome) {
+    let cellRef = doc(firestore, "chatbot_origin", name, "biome", cellName);
+    batch.set(cellRef, biome[cellName]);
   }
 
   await batch.commit();
@@ -75,7 +80,7 @@ export async function uploadOrigin(firestore, name, main, biome) {
 
 }
 
-export async function addInstance(firestore, originName, uid) {
+export async function cloneInstance(firestore, originName, uid) {
   /*
     originNameで指定されるチャットボットのデータをchatbot_activeにコピーする。
     コピー元のデータがnpc:trueだった場合、collection chatbot_activeに
@@ -86,20 +91,35 @@ export async function addInstance(firestore, originName, uid) {
 
   const sourceRef = doc(firestore, "chatbot_origin", originName);
   const sourceSnap = await getDoc(sourceRef);
+  let sourceCells = [];
 
   if (sourceSnap.exists()) {
+    // sourceを読み込む
     let source = sourceSnap.data();
-    if (source.npc) {
-      const destRef = doc(firestore, "chatbot_active", originName);
-      const destSnap = await getDoc(destRef);
-      if (!destSnap.exists()) {
-        await setDoc(destRef, source);
-      }
-    } else {
-      const destRef = doc(firestore, "chatbot_active", uid);
-      await setDoc(destRef, source);
+    for(let cellName of source.biome){
+      let cellRef = doc(firestore, "chatbot_active", originName, "biome",cellName);
+      let cellSnap = await getDoc(cellRef);
+      sourceCells[cellName] = {...cellSnap.data()};
     }
-  }
 
+    // destに書き込む
+    const batch = writeBatch(firestore);
+    const botId = source.npc ? originName : uid;
+
+    const destRef = doc(firestore, "chatbot_active", botId);
+    batch.set(destRef, source);
+
+    for(let cellName of source.biome){
+      let cellRef = doc(firestore, "chatbot_active", botId, "biome", cellName);
+      batch.set(cellRef, sourceCells[cellName]);
+    }
+
+    await batch.commit();
+  }
+  // 見つからなかった
+  throw new Error(`${originName}が見つかりません`)
 }
+
+
+
 

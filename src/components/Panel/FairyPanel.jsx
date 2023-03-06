@@ -1,7 +1,7 @@
 import React,{ useContext } from "react";
 import { withPrefix } from 'gatsby';
 import Box from '@mui/material/Box';
-import { BiomeBotContext } from '../BiomeBot-0.10/BiomeBotProvider';
+import { BiomebotContext } from '../Biomebot-0.10/BiomebotProvider';
 
 
 export default function FairyPanel(props) {
@@ -13,7 +13,8 @@ export default function FairyPanel(props) {
   true           | 色付きの背景＋avatar
   */
 
-  const bot = useContext(BiomeBotContext);
+
+  const bot = useContext(BiomebotContext);
   const width = 180;
   const height = width * 4/3;
 

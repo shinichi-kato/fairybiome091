@@ -12,10 +12,12 @@
     "@emotion/styled": "latest",
     "@mui/icons-material": "^5.11.9",
     "@mui/material": "latest",
+    "dexie": "^3.2.3",
     "firebase": "^9.17.1",
     "gatsby": "latest",
     "gatsby-plugin-react-helmet": "latest",
     "gatsby-source-filesystem": "^5.6.0",
+    "mathjs": "^11.6.0",
     "react": "latest",
     "react-dom": "latest",
     "react-helmet": "latest"

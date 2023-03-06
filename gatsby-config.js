@@ -25,7 +25,7 @@ module.exports = {
     }
   ],
   siteMetadata: {
-    title: 'BiomeBot ver 0.91',
+    title: 'Biomebot ver 0.91',
     author: '加藤真一',
     lang: 'ja',
     backgroundColorPalette: [ // https://www.ppgpaints.com/color/color-families/neutrals

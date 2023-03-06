@@ -75,17 +75,16 @@ export default function AdminPage({ firestore }) {
 
       for (let dir of dirs) {
         /* main.jsonをhostからダウンロード */
-        let data = await fetch(`/chatbot/biomebot/${dir}/main.json`);
+        let data = await fetch(`/chatbot/Biomebot/${dir}/main.json`);
         let main = await data.json();
         let biome = {};
 
         for (let cellName of main.biome) {
-          data = await fetch(`/chatbot/biomebot/${dir}/${cellName}`);
+          data = await fetch(`/chatbot/Biomebot/${dir}/${cellName}`);
           biome[cellName] = await data.json();
         }
         /* firestoreにアップロード */
         await uploadOrigin(firestore, dir, main, biome);
-        
 
       }
     })();
@@ -97,7 +96,8 @@ export default function AdminPage({ firestore }) {
       maxWidth="xs"
       disableGutters
       sx={{
-        height: "100vh"
+        height: "100vh",
+        backgroundColor: "#eeeeee",
       }}
     >
       <Grid container spacing={2}>
