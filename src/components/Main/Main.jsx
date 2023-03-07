@@ -29,7 +29,15 @@ const initialState = {
 };
 
 function reducer(state, action) {
+  console.log(`Main - ${action.type}`)
   switch (action.type) {
+    case 'setBotId': {
+      return {
+        ...state,
+        botId: action.botId,
+        botReady: false,
+      }
+    }
     case 'toCreateBot': {
       return {
         ...state,
@@ -74,16 +82,15 @@ export default function Main({ firestore }) {
 
   useEffect(() => {
     if (user.uid && !state.botId) {
-      dispatch({ type: 'SetBotId', botId: user.uid })
+      dispatch({ type: 'setBotId', botId: user.uid })
     }
   }, [user.uid, state.botId]);
 
   const handleBotReady = () => { dispatch({ type: 'botReady' }) };
   const handleBotNotFound = () => { dispatch({ type: 'botNotFound' }) };
-  const handleToCreateBot = () => { dispatch({ type: 'setPage', page: 'CreateBot' }) };
+  const handleToCreateBot = () => { dispatch({ type: 'setPage', page: 'createBot' }) };
   const handleToChatRoom = () => { dispatch({ type: 'setPage', page: 'chatRoom' }) };
   const handleToMainMenu = () => { dispatch({ type: 'setPage', page: 'mainMenu' }) };
-  const handleToUserSettings = () => { dispatch({ type: 'setPage', page: 'uerSettings' }) };
 
   return (
     <EcosystemProvider>
@@ -98,7 +105,7 @@ export default function Main({ firestore }) {
             state={state}
             handleToCreateBot={handleToCreateBot}
             handleToChatRoom={handleToChatRoom}
-            handleToUserSettings={handleToUserSettings}
+            handleToUserSettings={user.openUserSettings}
           />
         }
         {

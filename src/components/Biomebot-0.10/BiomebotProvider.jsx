@@ -225,6 +225,10 @@ export default function BiomebotProvider({
     handleBotReady,
   ]);
 
+  useEffect(()=>{
+    // ここでbotIdが変わったらロード
+  },[]);
+
   function handleLoad(url) {
     biomeLoad(url);
   }

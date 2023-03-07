@@ -1,5 +1,5 @@
 import { useReducer, useEffect, useCallback } from 'react';
-import { useCells } from './useCells0';
+import { useCells } from './useCells';
 import { db } from '../db';
 
 const BIOME_LOADING = 0;

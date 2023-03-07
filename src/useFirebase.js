@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getFirestore, doc, writeBatch, getDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, writeBatch, getDoc } from 'firebase/firestore';
 
 export default function useFirebase() {
   const [firebase, setFirebase] = useState();
@@ -80,7 +80,7 @@ export async function uploadOrigin(firestore, name, main, biome) {
 
 }
 
-export async function cloneInstance(firestore, originName, uid) {
+export async function clone(firestore, originName, uid) {
   /*
     originNameで指定されるチャットボットのデータをchatbot_activeにコピーする。
     コピー元のデータがnpc:trueだった場合、collection chatbot_activeに
@@ -96,28 +96,32 @@ export async function cloneInstance(firestore, originName, uid) {
   if (sourceSnap.exists()) {
     // sourceを読み込む
     let source = sourceSnap.data();
-    for(let cellName of source.biome){
-      let cellRef = doc(firestore, "chatbot_active", originName, "biome",cellName);
+    for (let cellName of source.biome) {
+      let cellRef = doc(firestore, "chatbot_active", originName, "biome", cellName);
       let cellSnap = await getDoc(cellRef);
-      sourceCells[cellName] = {...cellSnap.data()};
+      sourceCells[cellName] = { ...cellSnap.data() };
     }
 
     // destに書き込む
     const batch = writeBatch(firestore);
     const botId = source.npc ? originName : uid;
+    console.log(botId)
 
     const destRef = doc(firestore, "chatbot_active", botId);
     batch.set(destRef, source);
 
-    for(let cellName of source.biome){
+    for (let cellName of source.biome) {
       let cellRef = doc(firestore, "chatbot_active", botId, "biome", cellName);
       batch.set(cellRef, sourceCells[cellName]);
     }
 
     await batch.commit();
   }
-  // 見つからなかった
-  throw new Error(`${originName}が見つかりません`)
+  else {
+    // 見つからなかった
+    throw new Error(`${originName}が見つかりません`)
+
+  }
 }
 
 

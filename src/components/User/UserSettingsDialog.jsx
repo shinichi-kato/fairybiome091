@@ -25,6 +25,7 @@ function initialStateFactory(state) {
     displayName: state.displayName,
     isValid: isValid(state),
     startedValid: isValid(state),
+    administrator: state.administrator,
   }
 }
 
@@ -81,7 +82,7 @@ function reducer(state, action) {
   }
 }
 
-export default function UserDialog({ user, handleChangeUserSettings, handleCancel }) {
+export default function UserSettingsDialog({ user, handleChangeUserSettings, handleCancel }) {
   const [state, dispatch] = useReducer(reducer, initialStateFactory(user));
   const auth = useContext(AuthContext);
 
@@ -109,6 +110,8 @@ export default function UserDialog({ user, handleChangeUserSettings, handleCance
   function handleSubmit(e) {
     handleChangeUserSettings(state)
   }
+
+  console.log(state)
 
   return (
     <Container

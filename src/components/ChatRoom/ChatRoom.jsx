@@ -1,6 +1,6 @@
 import React, { useContext, useRef, useEffect, useState, useCallback } from 'react';
 import {
-  doc, query, orderby, limit, onSnapshot,
+  doc, query, orderBy, limit, onSnapshot,
   setDoc, serverTimestamp
 } from 'firebase/firestore'
 import Box from '@mui/material/Box';
@@ -47,7 +47,7 @@ export default function ChatRoom({ firestore, handleToMainPage }) {
       const logRef = doc(firestore, "users", user.uid, "log");
       const q = query(
         logRef,
-        orderby("timestame", "desc"),
+        orderBy("timestame", "desc"),
         limit(20));
 
       unsubscribe = onSnapshot(q, snap => {

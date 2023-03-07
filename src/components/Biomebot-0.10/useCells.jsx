@@ -1,5 +1,7 @@
 import { useReducer, useEffect, useCallback } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import {
+  doc, collection, getDoc, getDocs
+} from 'firebase/firestore';
 
 import CentralStateMachine from './engine/central-state-machine';
 import PatternEncoder from './engine/pattern-encoder';
@@ -40,6 +42,7 @@ function initialState(mainCellName) {
 
 
 function reducer(state, action) {
+  console.log(`useCells - ${action.type}`)
   switch (action.type) {
 
     case 'setBiomeCells': {
@@ -94,7 +97,7 @@ function reducer(state, action) {
 }
 
 
-export function useCells(firestore, mainCellPath) {
+export function useCells(firestore, mainCellName) {
   /*
     usage:
     メインセルの読み込み
@@ -126,11 +129,12 @@ export function useCells(firestore, mainCellPath) {
         async (resolve, reject) => {
           if (!state.parentName) {
             // メインセルの場合
+            const cellName = state.cellNames[0]
             const docRef = doc(firestore, "chatbot_active", cellName);
             const snap = await getDoc(docRef);
             if (snap.exits()) {
               resolve([{
-                data: snap.data(),
+                ...snap.data(),
                 filename: cellName
               }])
             }
@@ -143,8 +147,8 @@ export function useCells(firestore, mainCellPath) {
             snap.forEach(doc => {
               if (doc.exists()) {
                 data.push({
-                  data: doc.data(),
-                  filename: cellName
+                  ...doc.data(),
+                  filename: doc.id
                 })
               }
             })
@@ -179,7 +183,7 @@ export function useCells(firestore, mainCellPath) {
         })
     }
 
-  }, [state.cellNames]);
+  }, [state.cellNames, firestore, state.parentName]);
 
   return [state, load];
 }

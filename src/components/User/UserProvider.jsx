@@ -12,7 +12,7 @@ usersコレクション
   logコレクション
     
 */
-import React, { useReducer, createContext, useEffect, useState, useContext } from 'react';
+import React, { useReducer, createContext, useEffect, useContext } from 'react';
 import { useStaticQuery, graphql } from "gatsby"
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import UserSettingsDialog from './UserSettingsDialog';
@@ -38,7 +38,7 @@ function reducer(state, action) {
       const u = action.user;
       return {
         ...state,
-        diplayName: u.displayName,
+        displayName: u.displayName,
         avatarDir: u.avatarDir,
         backgroundColorIndex: u.backgroundColorIndex,
         administrator: u.administrator,
@@ -81,10 +81,6 @@ export default function UserProvider({ firestore, children }) {
     initialStateFactory(data.site.siteMetadata.backgroundColorPalette)
   );
 
-  const [log, setLog] = useState([]);
-
-
-
   const auth = useContext(AuthContext);
 
   useEffect(() => {
@@ -104,7 +100,6 @@ export default function UserProvider({ firestore, children }) {
           }
         });
 
-      // logはここでサブスクリプションする
     }
   }, [firestore, auth.uid]);
 
@@ -118,13 +113,10 @@ export default function UserProvider({ firestore, children }) {
     dispatch({type: 'closeDialog'})
   }
 
-  function changeUserSettings(data) {
+  function handleChangeUserSettings(data) {
     dispatch({
       type: 'setUser',
-      diplayName: data.displayName,
-      avatarDir: data.avatarDir,
-      backgroundColorIndex: data.backgroundColorIndex,
-      administrator: data.administrator,
+      user: {...data}
     });
     setDoc(doc(firestore, "users", auth.uid), {
       displayName: data.displayName,
@@ -144,15 +136,14 @@ export default function UserProvider({ firestore, children }) {
         avatarDir: state.avatarDir,
         backgroundColor: state.backgroundColorPalette[state.backgroundColorIndex],
         administrator: state.administrator,
-        log: state.log,
-        openUserSetting: openUserSettings
+        openUserSettings: openUserSettings
       }}
     >
       {state.userState === 'openDialog'
         ?
         <UserSettingsDialog
           user={state}
-          handleChangeUserSettings={changeUserSettings}
+          handleChangeUserSettings={handleChangeUserSettings}
           handleCancel={handleCloseUserSettings}
         />
         :

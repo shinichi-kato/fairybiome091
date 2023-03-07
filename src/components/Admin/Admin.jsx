@@ -70,17 +70,17 @@ export default function AdminPage({ firestore }) {
       アップロードする。
     */
 
-    const dirs = data.allFile.nodes.map(node=>node.relativeDirectory);
+    const dirs = data.allFile.nodes.map(node => node.relativeDirectory);
     (async () => {
 
       for (let dir of dirs) {
         /* main.jsonをhostからダウンロード */
-        let data = await fetch(`/chatbot/Biomebot/${dir}/main.json`);
+        let data = await fetch(`/chatbot/biomebot/${dir}/main.json`);
         let main = await data.json();
         let biome = {};
 
         for (let cellName of main.biome) {
-          data = await fetch(`/chatbot/Biomebot/${dir}/${cellName}`);
+          data = await fetch(`/chatbot/biomebot/${dir}/${cellName}`);
           biome[cellName] = await data.json();
         }
         /* firestoreにアップロード */
