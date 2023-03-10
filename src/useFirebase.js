@@ -82,7 +82,8 @@ export async function uploadOrigin(firestore, name, main, biome) {
 
 export async function clone(firestore, originName, uid) {
   /*
-    originNameで指定されるチャットボットのデータをchatbot_activeにコピーする。
+    originNameで指定されるチャットボットのデータをchatbot_activeにuidという
+    名前でコピーする。
     コピー元のデータがnpc:trueだった場合、collection chatbot_activeに
     {originName}の名前でコピーを作る。すでに同名のデータがある場合は無視する。
     npc:falseだった場合{uid}の名前でコピーを作る。すでに同名のデータがある
@@ -97,8 +98,10 @@ export async function clone(firestore, originName, uid) {
     // sourceを読み込む
     let source = sourceSnap.data();
     for (let cellName of source.biome) {
-      let cellRef = doc(firestore, "chatbot_active", originName, "biome", cellName);
+      let cellRef = doc(firestore, "chatbot_origin", originName, "biome", cellName);
       let cellSnap = await getDoc(cellRef);
+      let data = cellSnap.data();
+      console.log(data)
       sourceCells[cellName] = { ...cellSnap.data() };
     }
 

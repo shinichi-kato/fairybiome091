@@ -2,7 +2,6 @@ import { useReducer, useEffect, useCallback } from 'react';
 import { useCells } from './useCells';
 import { db } from '../db';
 
-const BIOME_LOADING = 0;
 export const BIOME_MAIN_READY = 1;
 export const BIOME_READY = 2;
 
@@ -10,7 +9,6 @@ export const BIOME_READY = 2;
 const initialState = {
   status: 'init',
   isReady: false,
-  dir: '',
   mode: 'main',
   backgroundColor: '',
   avatarDir: '',
@@ -25,13 +23,6 @@ const initialState = {
 function reducer(state, action) {
   console.log("useBiome reducer", action)
   switch (action.type) {
-    case 'loading': {
-      return {
-        ...initialState,
-        status: BIOME_LOADING,
-        dir: action.dir,
-      }
-    }
 
     case 'main_loaded': {
       return {
@@ -111,21 +102,17 @@ function reducer(state, action) {
 
 export function useBiome(firestore, botId) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [mainState, mainLoad] = useCells(firestore, botId);
-  const [biomeState, biomeLoad] = useCells(firestore);
+  const [mainState] = useCells(firestore, botId);
+
+  const mainCellName = mainState.cellNames.length === 0 ? null : mainState.cellNames[0];
+  const biomeCells = mainCellName ? mainState.biomes[mainCellName] : [];
+  const [biomeState] = useCells(firestore, biomeCells, botId);
 
   useEffect(() => {
-    if (mainState.status === 'loaded' && biomeState.status === 'init') {
+    if (mainState.status === 'loaded') {
       (async () => {
         await db.open(botId);
         await db.appendMemoryItems(mainState.memory);
-        const dir = getDir(botId);
-        dispatch({ type: 'loading', dir: dir }); // dirは使わない
-
-        const mainCellName = mainState.cellNames[0];
-        const biomeNames = mainState.biomes[mainCellName];
-        biomeLoad(biomeNames);
-        // この時点でチャットボットはmainのみ返答可能になる
         dispatch({
           type: 'main_loaded',
           avatarDir: mainState.spool[mainCellName].avatarDir,
@@ -140,9 +127,9 @@ export function useBiome(firestore, botId) {
   }
     , [
       botId,
+      mainCellName,
       mainState.status,
       biomeState.status,
-      biomeLoad,
       mainState.biomes,
       mainState.cellNames,
       mainState.spool,
@@ -168,23 +155,14 @@ export function useBiome(firestore, botId) {
     biomeState.order,
     biomeState.memory]);
 
-  const load = useCallback(url => {
-    // チャットボットを切り替えるとき用。後で実装
-    mainLoad(url);
-  }, [mainLoad]);
 
   const update = useCallback((mode, index) => {
-    dispatch({type: 'update', mode: mode, index:index})
+    dispatch({ type: 'update', mode: mode, index: index })
   }, []);
 
   return [
     state,
-    load,
     update
   ]
 }
 
-function getDir(url) {
-  const match = url.match(/(.+\/)(.+?)([?#;].*)?$/)
-  return match[1];
-}

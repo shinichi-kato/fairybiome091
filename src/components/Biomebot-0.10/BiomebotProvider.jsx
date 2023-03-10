@@ -203,12 +203,17 @@ export default function BiomebotProvider({
   children
 }) {
 
-  const [biomeState, biomeLoad, biomeUpdate] = useBiome(firestore, botId);
+  const [biomeState, biomeUpdate] = useBiome(firestore,botId);
   const [state, dispatch] = useReducer(reducer, initialState);
   const user = useContext(UserContext);
 
+  //-----------------------------------------------------------
+  //
+  //  チャットボットの読み込み
+  //
+  
   useEffect(() => {
-    if (user.uid && biomeState.isReady) {
+    if (user.uid && biomeState.isReady && state.status === 'init') {
       dispatch({
         type: 'biomeReady',
         backgroundColor: biomeState.backgroundColor,
@@ -223,15 +228,8 @@ export default function BiomebotProvider({
     biomeState.isReady,
     biomeState.backgroundColor,
     handleBotReady,
+    state.status,
   ]);
-
-  useEffect(()=>{
-    // ここでbotIdが変わったらロード
-  },[]);
-
-  function handleLoad(url) {
-    biomeLoad(url);
-  }
 
   const handleExecute = useCallback((userMessage, emitter) => {
     // db.memory辞書に記載された一部の文字列をタグに置き換える。
@@ -325,7 +323,6 @@ export default function BiomebotProvider({
     <BiomebotContext.Provider
       value={{
         isReady: biomeState.isReady,
-        load: handleLoad,
         execute: handleExecute,
         avatarURL: state.avatarURL,
         backgroundColor: state.backgroundColor,
