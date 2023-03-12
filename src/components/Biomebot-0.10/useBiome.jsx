@@ -8,6 +8,7 @@ export const BIOME_READY = 2;
 
 const initialState = {
   status: 'init',
+  botId: null,
   isReady: false,
   mode: 'main',
   backgroundColor: '',
@@ -21,12 +22,13 @@ const initialState = {
 
 
 function reducer(state, action) {
-  console.log("useBiome reducer", action)
+  console.log("useBiome reducer", action.type)
   switch (action.type) {
 
     case 'main_loaded': {
       return {
         ...state,
+        botId: action.botId,
         isReady: false,
         status: BIOME_MAIN_READY,
         avatarDir: action.avatarDir,
@@ -103,18 +105,17 @@ function reducer(state, action) {
 export function useBiome(firestore, botId) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [mainState] = useCells(firestore, botId);
-
-  const mainCellName = mainState.cellNames.length === 0 ? null : mainState.cellNames[0];
-  const biomeCells = mainCellName ? mainState.biomes[mainCellName] : [];
-  const [biomeState] = useCells(firestore, biomeCells, botId);
+  const [biomeState] = useCells(firestore, botId, mainState.biomeCellNames);
 
   useEffect(() => {
-    if (mainState.status === 'loaded') {
+    if (mainState.status === 'loaded' && state.botId !== botId) {
       (async () => {
         await db.open(botId);
         await db.appendMemoryItems(mainState.memory);
+        const mainCellName = mainState.cellNames[0];
         dispatch({
           type: 'main_loaded',
+          botId: botId,
           avatarDir: mainState.spool[mainCellName].avatarDir,
           spool: mainState.spool,
           order: mainState.cellNames,
@@ -127,10 +128,9 @@ export function useBiome(firestore, botId) {
   }
     , [
       botId,
-      mainCellName,
+      state.botId,
+      mainState.botId,
       mainState.status,
-      biomeState.status,
-      mainState.biomes,
       mainState.cellNames,
       mainState.spool,
       mainState.memory,
@@ -148,11 +148,10 @@ export function useBiome(firestore, botId) {
       })
 
     }
-  }, [botId,
+  }, [
     biomeState.status,
     biomeState.cellNames,
     biomeState.spool,
-    biomeState.order,
     biomeState.memory]);
 
 

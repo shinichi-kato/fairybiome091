@@ -9,7 +9,7 @@ import InputBase from '@mui/material/InputBase';
 import IconButton from '@mui/material/IconButton';
 import SendIcon from '@mui/icons-material/Send';
 
-import { AuthContext } from "../Auth/AuthProvider";
+import { UserContext } from "../User/UserProvider";
 import { BiomebotContext } from '../Biomebot-0.10/BiomebotProvider';
 import { Message } from '../message';
 import FairyPanel from '../Panel/FairyPanel';
@@ -137,7 +137,7 @@ export default function Studio({ log, writeLog, closeness }) {
       */
 
   const [userInput, setUserInput] = useState("");
-  const auth = useContext(AuthContext);
+  const user = useContext(UserContext);
   const bot = useContext(BiomebotContext);
   const botRef = useRef(bot);
   const message = log[0];
@@ -154,20 +154,20 @@ export default function Studio({ log, writeLog, closeness }) {
   function handleUserSubmit(event) {
     writeLog(new Message({
       text: userInput,
-      name: auth.displayName,
+      name: user.displayName,
       person: 'user',
-      avatarURL: auth.photoURL,
-      backgroundColor: auth.backgroundColor,
+      avatarURL: user.photoURL,
+      backgroundColor: user.backgroundColor,
     }));
 
     // 後でtextの中身を直接いじるのでMessageのコピーを新たに作って渡す
     setTimeout(() => {
       botRef.current.execute(new Message({
         text: userInput,
-        name: auth.displayName,
+        name: user.displayName,
         person: 'user',
-        avatarURL: auth.photoURL,
-        backgroundColor: auth.backgroundColor,
+        avatarURL: user.photoURL,
+        backgroundColor: user.backgroundColor,
       }), writeLog)
     }, DELAY_MSEC);
 
@@ -177,9 +177,10 @@ export default function Studio({ log, writeLog, closeness }) {
 
   const memorizedUserPanel = useMemo(() =>
     <UserPanel
+      user={user}
       panelWidth={panelWidth}
     />
-    , [panelWidth]);
+    , [user, panelWidth]);
 
   return (
     <Box

@@ -134,6 +134,7 @@ export default function UserProvider({ firestore, children }) {
         uid: auth.uid,
         displayName: state.displayName,
         avatarDir: state.avatarDir,
+        photoURL: `${state.avatarDir}/peace.svg`,
         backgroundColor: state.backgroundColorPalette[state.backgroundColorIndex],
         administrator: state.administrator,
         openUserSettings: openUserSettings

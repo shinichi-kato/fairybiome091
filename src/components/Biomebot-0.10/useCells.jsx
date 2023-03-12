@@ -30,17 +30,24 @@ function newModules(name) {
 
 const initialState = {
   status: 'init',
-  parentName: null, // cellがbiomeの場合mainセルの名前
+  botId: null,
   cellNames: [],  // このCellsを構成するcellの名前
   spool: {}, // このcellsを構成するcellの実体
-  biomes: [],   // このcellsに属するbiome名のリスト
-  memory: {}
+  biomes: {},   // このcellsのcell名:それに属するbiome名のリストの辞書
+  memory: {},
+  biomeCellNames: [], // このセルがmainだった場合、そのbiome名のリスト
 };
 
-
 function reducer(state, action) {
-  console.log(`useCells - ${action.type}`)
+  console.log(`useCells`, action)
   switch (action.type) {
+
+    case 'loading': {
+      return {
+        ...state,
+        state: 'loading'
+      }
+    }
 
     case 'loaded': {
       let spool = {};
@@ -58,16 +65,17 @@ function reducer(state, action) {
           retention: d.retention,
           parentName: d.parentName
         }
-
         biomes[d.name] = [...d.biome];
         memory = merge(memory, d.memory);
       }
       return {
+        botId: action.data[0].botId,
         status: 'loaded',
         cellNames: action.data.map(d => d.name),
         spool: spool,
         biomes: biomes,
         memory: memory,
+        biomeCellNames: action.data[0].biome
       }
     }
 
@@ -85,16 +93,15 @@ function reducer(state, action) {
 }
 
 
-export function useCells(firestore, cellNames, parentName) {
+export function useCells(firestore, botId, biomeCellNames) {
   /*
     usage:
     メインセルの読み込み
-    const main = useCells(firestore,cellName)
+    const main = useCells(firestore, botId)
     
     biomeセルの読み込み
-    const biome = useCells(firestore, cellNames,parentName)
+    const biome = useCells(firestore, botId, cellNames)
 
-    cellNamesがstringかarrayになったらセルを読み込む
 
   */
 
@@ -104,36 +111,42 @@ export function useCells(firestore, cellNames, parentName) {
   //
   // セルの読み込み
   // リッスンをしたいが、動作中の書き換えがあると困るのでやめておく。
+  // state.botIdが同じ場合同一とみなす
+  //
 
   useEffect(() => {
-    if (firestore) {
+    if (firestore && botId !== state.botId) {
       (async () => {
         let payload = [];
-        if (typeof cellNames === 'string') {
-          // cellNamesがstringの場合はfirestoreからメインセルを読み込む
-          const cellName = cellNames;
-          const docRef = doc(firestore, "chatbot_active", cellName);
+        if (!biomeCellNames) {
+          // biomeCellNamesが未定義＝メインセルの読み込み
+          const docRef = doc(firestore, "chatbot_active", botId);
           const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            payload.push({
-              ...snap.data(),
-              name: snap.id,
 
+          if (snap.exists()) {
+            const data = snap.data();
+            payload.push({
+              ...data,
+              botId: botId,
+              name: botId,
+              biomeCellNames: data.biome,
             })
           } else {
-            dispatch({ type: 'loadFailed', message: cellName });
+            dispatch({ type: 'loadFailed', message: botId });
             return;
           }
-        } else if (Array.isArray(cellNames) && cellNames.length !== 0) {
-          // cellNamesが配列の場合はfirestoreからbiomeセルを読み込む
-          const colRef = collection(firestore, "chatbot_active", parentName, "biome");
-          const snap = await getDocs(colRef);
+
+        } else if (Array.isArray(biomeCellNames) && biomeCellNames.length !== 0) {
+          // biomeCellNamesが定義されている場合はfirestoreからbiomeセルを読み込む
+          const biomeRef = collection(firestore, "chatbot_active", botId, "biome");
+          const snap = await getDocs(biomeRef);
           snap.forEach(doc => {
             if (doc.exists()) {
               payload.push({
                 ...doc.data(),
+                botId: botId,
                 name: doc.id,
-                parentName: parentName
+                biomeCellNames: [],
               })
             } else {
               dispatch({ type: 'loadFailed', message: doc.id });
@@ -141,12 +154,16 @@ export function useCells(firestore, cellNames, parentName) {
             }
           })
         } else {
+          // biomeCellNamesが空だった場合は何もせず脱出
           return;
         }
 
+        if (payload.length === 0) {
+          return;
+        }
         let data = [];
         for (let p of payload) {
-          console.log(p)
+          // console.log("payload", p)
           const encoder = newModules(p.encoder);
           const stateMachine = newModules(p.stateMachine || 'BasicStateMachine');
           const decoder = newModules(p.decoder);
@@ -159,15 +176,11 @@ export function useCells(firestore, cellNames, parentName) {
           })
         }
 
-        if (data.length !== 0) {
-          dispatch({
-            type: 'loaded',
-            data: data
-          })
-        }
+        dispatch({type: 'loaded', data: data})
       })();
     }
-  }, [firestore, cellNames, parentName]);
+  }, [firestore, botId, biomeCellNames,
+    state.botId]);
 
 
   return [state];

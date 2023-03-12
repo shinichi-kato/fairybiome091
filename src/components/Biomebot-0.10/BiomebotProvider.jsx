@@ -169,6 +169,7 @@ const initialState = {
 }
 
 function reducer(state, action) {
+  console.log("biomebotProvider ",action)
   switch (action.type) {
     case 'biomeReady': {
       return {
@@ -203,7 +204,7 @@ export default function BiomebotProvider({
   children
 }) {
 
-  const [biomeState, biomeUpdate] = useBiome(firestore,botId);
+  const [biomeState, biomeUpdate] = useBiome(firestore, botId);
   const [state, dispatch] = useReducer(reducer, initialState);
   const user = useContext(UserContext);
 
@@ -211,7 +212,7 @@ export default function BiomebotProvider({
   //
   //  チャットボットの読み込み
   //
-  
+
   useEffect(() => {
     if (user.uid && biomeState.isReady && state.status === 'init') {
       dispatch({

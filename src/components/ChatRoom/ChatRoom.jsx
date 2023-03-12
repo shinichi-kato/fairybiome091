@@ -1,7 +1,7 @@
 import React, { useContext, useRef, useEffect, useState, useCallback } from 'react';
 import {
-  doc, query, orderBy, limit, onSnapshot,
-  setDoc, serverTimestamp
+  collection, query, orderBy, limit, onSnapshot,
+  addDoc, serverTimestamp
 } from 'firebase/firestore'
 import Box from '@mui/material/Box';
 
@@ -27,27 +27,33 @@ export default function ChatRoom({ firestore, handleToMainPage }) {
   const writeLog = useCallback(message => {
     /*ログの書き込み */
     (async () => {
-      const logRef = doc(firestore, "users", user.uid, "log");
-      setDoc(logRef, {
+      const logRef = collection(firestore, "users", user.uid, "log");
+      await addDoc(logRef, {
         text: message.text,
         name: message.name,
         timestamp: serverTimestamp(),
         avatarURL: message.avatarURL,
         backgroundColor: message.backgroundColor,
         person: message.person,
-        mood: message.mood
+        mood: message.mood || "null"
       })
     })()
   }, [firestore, user.uid]);
+
+  //-------------------------------------------------------------
+  //
+  // firestoreに格納したログの購読
+  //
 
   useEffect(() => {
     let unsubscribe = null;
 
     if (user.uid) {
-      const logRef = doc(firestore, "users", user.uid, "log");
+      console.log("subscribe start")
+      const logRef = collection(firestore, "users", user.uid, "log");
       const q = query(
         logRef,
-        orderBy("timestame", "desc"),
+        orderBy("timestamp", "desc"),
         limit(20));
 
       unsubscribe = onSnapshot(q, snap => {
@@ -56,7 +62,8 @@ export default function ChatRoom({ firestore, handleToMainPage }) {
           const d = doc.data();
           l.push({
             ...d,
-            timestamp: d.timestamp.toDate()
+            timestamp: d.timestamp ? d.timestamp.toDate() : ""
+            // timestampはserverTimestamp()で書き込むとratency補正時にnullが帰ってくる
           });
         });
         setLog(l);
@@ -70,7 +77,12 @@ export default function ChatRoom({ firestore, handleToMainPage }) {
         unsubscribe();
       }
     }
-  }, [user.uid, firestore,]);
+  }, [user.uid, firestore]);
+
+  //----------------------------------------------------
+  //
+  // 入室したことをログに記録
+  //
 
   useEffect(() => {
     if (bot.isReady) {
@@ -82,6 +94,11 @@ export default function ChatRoom({ firestore, handleToMainPage }) {
       botRef.current.execute(code, writeLog)
     }
   }, [bot.isReady, writeLog]);
+
+  //----------------------------------------------------
+  //
+  // チャットボットのトリガへの反応
+  //
 
   useEffect(() => {
     if (change !== null) {

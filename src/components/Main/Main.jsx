@@ -48,7 +48,6 @@ function reducer(state, action) {
     case 'setPage': {
       return {
         ...state,
-        botId: action.botId,
         botReady: false,
         page: action.page,
       }
