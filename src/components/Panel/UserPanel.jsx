@@ -13,7 +13,7 @@ export default function UserPanel({user, panelWidth}) {
   */
   const width = panelWidth;
   const height = width * 4/3;
-  const photoURL = `${user.avatarDir}/peace.svg`;
+  const photoURL = `/user/${user.avatarDir}/peace.svg`;
 
   return (
     <Box

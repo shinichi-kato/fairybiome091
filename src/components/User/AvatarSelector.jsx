@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStaticQuery, graphql } from "gatsby"
 
 import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 
 export default function AvatarSelector({ avatarDir, handleChangeAvatarDir }) {
   const data = useStaticQuery(graphql`

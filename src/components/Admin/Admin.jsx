@@ -1,15 +1,21 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback,useMemo } from 'react';
 import { useStaticQuery, graphql } from "gatsby"
-
+import { navigate } from "gatsby";
 import {
-  collection, query, where,
+  collection, getDocs,
   getCountFromServer,
 } from "firebase/firestore";
 
 import Grid from '@mui/material/Grid';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import DownloadIcon from '@mui/icons-material/Download';
 import Typography from '@mui/material/Typography';
+
+import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
 
 import { UserContext } from '../User/UserProvider';
 import { AuthContext } from '../Auth/AuthProvider';
@@ -19,6 +25,7 @@ export default function AdminPage({ firestore }) {
   const user = useContext(UserContext);
   const auth = useContext(AuthContext);
   const [botCount, setBotCount] = useState(0);
+  const [userList, setUserList] = useState([]);
 
   const data = useStaticQuery(graphql`
   query {
@@ -30,15 +37,63 @@ export default function AdminPage({ firestore }) {
   }
   `);
 
+  //---------------------------------------------------------
+  //
+  // 
+  //
+  //
+
+  const openLog = useCallback(id=>()=>{
+
+  },[]);
+
+  const downloadLog = useCallback(id=>()=>{
+
+  },[]);
+
+  const columns = useMemo(() => [
+    { field: 'displayName', headerName: 'ユーザ名' },
+    { field: 'count', headerName: 'ログ行数' },
+    { field: 'actions', type: 'actions',
+      getActions: params => [
+        <GridActionsCellItem
+          icon={<FolderOpenIcon />}
+          label="open"
+          onClick={openLog(params.id)}
+        />,
+        <GridActionsCellItem
+          icon={<DownloadIcon />}
+          label="download"
+          onClick={downloadLog(params.id)}
+        />
+      ]
+    }
+  ], [openLog, downloadLog]);
+
   useEffect(() => {
     if (firestore) {
-      const q = query(
-        collection(firestore, "chatbots"),
-        where("uid", "==", ""));
-
-      getCountFromServer(q).then(snap => {
+      const origins = collection(firestore, "chatbot_origin");
+      getCountFromServer(origins).then(snap => {
         setBotCount(snap.data().count);
-      })
+      });
+
+      const usersRef = collection(firestore, "users");
+      getDocs(usersRef).then(snap => {
+        snap.forEach(doc => {
+          (async () => {
+            const data = doc.data();
+            const logRef = collection(firestore, "users", doc.id, "log");
+            const countSnap = await getCountFromServer(logRef);
+            setUserList(prev => {
+              return [...prev, {
+                id: doc.id,
+                displayName: data.displayName,
+                count: countSnap.data().count,
+              }]
+            })
+          })();
+        })
+      });
     }
   }, [firestore]);
 
@@ -91,6 +146,10 @@ export default function AdminPage({ firestore }) {
 
   }
 
+  function toIndexPage() {
+    navigate('/')
+  }
+
   return (
     <Container
       maxWidth="xs"
@@ -101,6 +160,13 @@ export default function AdminPage({ firestore }) {
       }}
     >
       <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <IconButton
+            onClick={toIndexPage}
+          >
+            <ArrowBackIosIcon />
+          </IconButton>
+        </Grid>
         <Grid item xs={12}>
           {auth.email}
           <Button
@@ -115,7 +181,7 @@ export default function AdminPage({ firestore }) {
             アプリのセットアップ時に実行してください。
           </Typography>
           {botCount &&
-            <Typography sx={{ color: "#ff0000" }}>
+            <Typography sx={{ color: "#ff0000" }} variant="caption">
               サーバー上にチャットボットの初期データが{botCount}件存在します。
               アップロードを実行するとこれらのデータは上書きされます。
             </Typography>
@@ -128,10 +194,19 @@ export default function AdminPage({ firestore }) {
             アップロード
           </Button>
         </Grid>
-        <Grid item xs={8}>
-
+        <Grid item xs={12}>
+          ログの表示/ダウンロード
         </Grid>
-
+        <Grid item xs={12}>
+          <DataGrid
+            rows={userList.length === 0 ? [{ id: 0, displayName: 'loading', count: '' }] : userList}
+            columns={columns}
+            pageSize={5}
+            rowsPerPageOptions={[5]}
+            autoHeight
+            disableRowSelectionOnClick
+          />
+        </Grid>
       </Grid>
     </Container>
   )

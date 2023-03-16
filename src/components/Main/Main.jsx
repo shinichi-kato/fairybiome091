@@ -105,6 +105,7 @@ export default function Main({ firestore }) {
             handleToCreateBot={handleToCreateBot}
             handleToChatRoom={handleToChatRoom}
             handleToUserSettings={user.openUserSettings}
+            administrator={user.administrator}
           />
         }
         {

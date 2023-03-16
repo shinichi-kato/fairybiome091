@@ -13,7 +13,7 @@ import { Message } from '../message'
 
 import LogViewer from './LogViewer';
 
-const panelWidth = 180; // 120,160,192
+// const panelWidth = 180; // 120,160,192
 
 export default function ChatRoom({ firestore, handleToMainPage }) {
   const user = useContext(UserContext);
@@ -62,6 +62,7 @@ export default function ChatRoom({ firestore, handleToMainPage }) {
           const d = doc.data();
           l.push({
             ...d,
+            id:doc.id,
             timestamp: d.timestamp ? d.timestamp.toDate() : ""
             // timestampはserverTimestamp()で書き込むとratency補正時にnullが帰ってくる
           });

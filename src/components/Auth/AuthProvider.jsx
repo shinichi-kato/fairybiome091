@@ -1,8 +1,9 @@
 /*
 AuthProvider
-すべてのユーザについて認証を行う。
+ユーザ認証を行う。
 認証にはfirebaseSDKを利用する。
 
+TODO:auth失敗時の処理
 
 */
 
