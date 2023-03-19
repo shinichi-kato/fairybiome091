@@ -6,9 +6,19 @@ module.exports = {
   plugins: [
     'gatsby-plugin-top-layout',
     'gatsby-plugin-react-helmet',
-    // If you want to use styled components you should add the plugin here.
-    // 'gatsby-plugin-styled-components',
     'gatsby-plugin-mui-emotion',
+    {
+      resolve: `gatsby-plugin-manifest`,
+      options: {
+        name: `FairyBiome091`,
+        short_name: `FairyBiome091`,
+        start_url: `/`,
+        background_color: `#f7f0eb`,
+        theme_color: `#71c837`,
+        display: `standalone`,
+        icon: `src/images/icon-512x512.png`, 
+      },
+    },
     {
       resolve: `gatsby-source-filesystem`,
       options: {

@@ -13,7 +13,7 @@ import AuthProvider from '../components/Auth/AuthProvider';
 import useFirebase from "../useFirebase";
 
 
-export default function Index() {
+export default function EditPage({location}) {
   const [firebase, firestore] = useFirebase();
 
   return (
