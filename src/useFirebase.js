@@ -61,10 +61,10 @@ export default function useFirebase() {
 
 */
 
-async function loadChatbot(firestore, id) {
+export async function loadChatbot(firestore, id) {
   const sourceRef = doc(firestore, "chatbot_origin", id);
   const sourceSnap = await getDoc(sourceRef);
-  let sourceCells = [];
+  let sourceCells = {};
   let source;
 
   if (sourceSnap.exists()) {
