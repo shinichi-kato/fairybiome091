@@ -12,7 +12,7 @@ export default function EditPage() {
   return (
     <AuthProvider firebase={firebase}>
       <UserProvider firestore={firestore}>
-        <Editor firestor={firestore} />
+        <Editor firestore={firestore} />
       </UserProvider>
     </AuthProvider>
 

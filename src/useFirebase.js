@@ -3,8 +3,8 @@ import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, writeBatch, getDoc } from 'firebase/firestore';
 
 export default function useFirebase() {
-  const [firebase, setFirebase] = useState();
-  const [firestore, setFirestore] = useState();
+  const [firebase, setFirebase] = useState(null);
+  const [firestore, setFirestore] = useState(null);
 
   useEffect(() => {
     let fb;
@@ -61,8 +61,9 @@ export default function useFirebase() {
 
 */
 
-export async function loadChatbot(firestore, id) {
-  const sourceRef = doc(firestore, "chatbot_origin", id);
+export async function loadChatbot(firestore, id,collection) {
+  collection ||= 'chatbot_active';
+  const sourceRef = doc(firestore, collection, id);
   const sourceSnap = await getDoc(sourceRef);
   let sourceCells = {};
   let source;
@@ -71,7 +72,7 @@ export async function loadChatbot(firestore, id) {
     // sourceを読み込む
     source = sourceSnap.data();
     for (let cellName of source.biome) {
-      let cellRef = doc(firestore, "chatbot_origin", id, "biome", cellName);
+      let cellRef = doc(firestore, collection, id, "biome", cellName);
       let cellSnap = await getDoc(cellRef);
       let data = cellSnap.data();
       sourceCells[cellName] = { ...data };
@@ -113,7 +114,7 @@ export async function clone(firestore, originName, uid) {
     場合は上書きする。
   */
 
-  const [source, sourceCells] = await loadChatbot(firestore, originName);
+  const [source, sourceCells] = await loadChatbot(firestore, originName,'chatbot_origin');
 
   // destに書き込む
   const batch = writeBatch(firestore);
@@ -132,7 +133,7 @@ export async function clone(firestore, originName, uid) {
 }
 
 
-export async function download(firestore, id) {
+export async function download(firestore, id,collection) {
   /*チャットボットのデータを以下のobj形式で返す
   {
     'main.json': {
@@ -144,7 +145,7 @@ export async function download(firestore, id) {
     ...
   }
   */
-  const [source, sourceCells] =await loadChatbot(firestore, id);
+  const [source, sourceCells] =await loadChatbot(firestore, id,collection);
   return {
     'main.json': source,
     ...sourceCells

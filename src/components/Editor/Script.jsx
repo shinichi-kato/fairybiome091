@@ -5,7 +5,7 @@ export default function Script({state}){
   return (
     <Grid container>
       <Grid item xs={12}>
-        チャットボット選択
+        スクリプト編集
       </Grid>
     </Grid>
   )

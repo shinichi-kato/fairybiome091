@@ -10,8 +10,12 @@ export default function MainMenu({ state,
   handleToUserSettings,
   administrator }) {
 
-  function toAdminPage(){
+  function toAdminPage() {
     navigate('/admin/');
+  }
+
+  function toEditPage() {
+    navigate('/edit/');
   }
 
   return (
@@ -52,7 +56,18 @@ export default function MainMenu({ state,
             ユーザ情報の設定
           </Button>
         </Box>
-        { administrator &&
+        {
+          (administrator || state.botReady) &&
+          <Box>
+            <Button
+              onClick={toEditPage}
+            >
+              チャットボットの編集
+            </Button>
+          </Box>
+
+        }
+        {administrator &&
           <Box>
             <Button
               onClick={toAdminPage}

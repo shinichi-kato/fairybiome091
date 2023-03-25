@@ -36,6 +36,7 @@ function reducer(state, action) {
   switch (action.type) {
     case 'setUser': {
       const u = action.user;
+      console.log(u)
       return {
         ...state,
         displayName: u.displayName,

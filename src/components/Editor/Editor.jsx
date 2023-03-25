@@ -24,7 +24,7 @@
   
 */
 
-import React, { useContext, useReducer } from 'react';
+import React, { useContext, useReducer, useEffect } from 'react';
 import Container from '@mui/material/Container';
 import { UserContext } from '../User/UserProvider';
 import { loadChatbot } from '../../useFirebase';
@@ -42,6 +42,7 @@ const initialState = {
 }
 
 function reducer(state, action) {
+  console.log(`editor - ${action.type}`)
   switch (action.type) {
     case 'selectBot': {
       return {
@@ -50,6 +51,7 @@ function reducer(state, action) {
       }
     }
     case 'loading': {
+      console.log(action.botId,action.collection)
       return {
         botId: action.botId,
         collection: action.collection,
@@ -89,11 +91,12 @@ export default function Editor({ firestore }) {
   const user = useContext(UserContext);
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  useEffect(async () => {
+  useEffect(() => {
     if (firestore) {
       let botId, collection;
 
       if (!state.botId) {
+        console.log(user.administrator)
         if (user.administrator) {
           botId = null;
           collection = null;
@@ -106,17 +109,19 @@ export default function Editor({ firestore }) {
         collection = state.collection;
       }
 
-      dispatch({ type: 'loading', botId: botId, collection: collection });
       if (botId) {
-        const [main, cells] = await loadChatbot(firestore, botId);
-        dispatch({ type: 'loaded', main: main, cells: cells });
+        (async ()=>{
+          dispatch({ type: 'loading', botId: botId, collection: collection });
+          const [main, cells] = await loadChatbot(firestore, botId,collection);
+          dispatch({ type: 'loaded', main: main, cells: cells });
+        })();
       } else {
         dispatch({ type: 'selectBot' });
       }
     }
-  }, [firestore, state.botId, state.collection]);
+  }, [firestore, state.botId, state.collection, user.administrator, user.uid]);
 
-  function handleChangeBotId(botId, collection) {
+  function handleChangeBot(botId, collection) {
     dispatch({ type: 'changeBotId', botId: botId, collection: collection });
   }
 
@@ -134,7 +139,7 @@ export default function Editor({ firestore }) {
         <BotSelector
           firestore={firestore}
           state={state}
-          handleChangeBotId={handleChangeBotId}
+          handleChangeBot={handleChangeBot}
         />
       }
       {page === 'settings' &&

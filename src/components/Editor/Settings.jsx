@@ -5,7 +5,7 @@ export default function Settings({state}){
   return (
     <Grid container>
       <Grid item xs={12}>
-        チャットボット選択
+        設定画面
       </Grid>
     </Grid>
   )
