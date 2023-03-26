@@ -104,7 +104,7 @@ export async function uploadOrigin(firestore, name, main, biome) {
 
 }
 
-export async function clone(firestore, originName, uid) {
+export async function branch(firestore, originName, uid,userName) {
   /*
     originNameで指定されるチャットボットのデータをchatbot_activeにuidという
     名前でコピーする。
@@ -116,10 +116,12 @@ export async function clone(firestore, originName, uid) {
 
   const [source, sourceCells] = await loadChatbot(firestore, originName,'chatbot_origin');
 
+  // sourceにユーザ名を追加
+  source.userDisplayName = userName;
+  
   // destに書き込む
   const batch = writeBatch(firestore);
   const botId = source.npc ? originName : uid;
-  console.log(botId)
 
   const destRef = doc(firestore, "chatbot_active", botId);
   batch.set(destRef, source);

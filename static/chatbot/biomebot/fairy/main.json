@@ -2,6 +2,7 @@
     "description": "Biomebot参照モデル",
     "updatedAt": "2022-12-05",
     "creator": "skato",
+    "userDisplayName": "",
     "avatarDir": "/chatbot/avatar/fairy-girl/",
     "backgroundColor": "#7f2dce",
     "npc": false,

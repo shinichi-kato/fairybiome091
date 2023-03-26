@@ -6,17 +6,19 @@
   
 */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useContext } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import Box from '@mui/material/Box';
 import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 
-import { clone } from '../../useFirebase';
+import { UserContext } from '../User/UserProvider';
+import { branch } from '../../useFirebase';
 
 export default function CreateBot({ firestore, botId, handleToMainMenu }) {
   const [chatbots, setChatbots] = useState([]);
+  const user = useContext(UserContext);
 
   useEffect(() => {
     /*
@@ -55,7 +57,7 @@ export default function CreateBot({ firestore, botId, handleToMainMenu }) {
   function generateChatbot(originBotName) {
 
     (async () => {
-      await clone(firestore, originBotName, botId);
+      await branch(firestore, originBotName, botId, user.displayName );
 
     })();
     handleToMainMenu();

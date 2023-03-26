@@ -26,6 +26,12 @@
 
 import React, { useContext, useReducer, useEffect } from 'react';
 import Container from '@mui/material/Container';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import IconButton from '@mui/material/IconButton';
+import Box from '@mui/material/Box';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import Typography from '@mui/material/Typography';
 import { UserContext } from '../User/UserProvider';
 import { loadChatbot } from '../../useFirebase';
 import Settings from './Settings';
@@ -47,11 +53,11 @@ function reducer(state, action) {
     case 'selectBot': {
       return {
         ...state,
-        page: 'botSelector',
+        page: 'selectBot',
       }
     }
     case 'loading': {
-      console.log(action.botId,action.collection)
+      console.log(action.botId, action.collection)
       return {
         botId: action.botId,
         collection: action.collection,
@@ -92,11 +98,10 @@ export default function Editor({ firestore }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    if (firestore) {
+    if (firestore && user.administrator !== null) {
       let botId, collection;
 
       if (!state.botId) {
-        console.log(user.administrator)
         if (user.administrator) {
           botId = null;
           collection = null;
@@ -110,9 +115,9 @@ export default function Editor({ firestore }) {
       }
 
       if (botId) {
-        (async ()=>{
+        (async () => {
           dispatch({ type: 'loading', botId: botId, collection: collection });
-          const [main, cells] = await loadChatbot(firestore, botId,collection);
+          const [main, cells] = await loadChatbot(firestore, botId, collection);
           dispatch({ type: 'loaded', main: main, cells: cells });
         })();
       } else {
@@ -135,24 +140,39 @@ export default function Editor({ firestore }) {
         backgroundColor: "#eeeeee",
       }}
     >
-      {page === 'selectBot' &&
-        <BotSelector
-          firestore={firestore}
-          state={state}
-          handleChangeBot={handleChangeBot}
-        />
-      }
-      {page === 'settings' &&
-        <Settings
-          state={state}
-        />
-      }
-      {
-        page === 'script' &&
-        <Script
-          state={state}
-        />
-      }
+      <Box sx={{ flexGrow: 1 }}>
+        <AppBar position="static">
+          <Toolbar>
+            <IconButton>
+              <ChevronLeftIcon color="inherit"/>
+            </IconButton>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              編集
+            </Typography>
+          </Toolbar>
+        </AppBar>
+      </Box>
+      <Box>
+
+        {page === 'selectBot' &&
+          <BotSelector
+            firestore={firestore}
+            state={state}
+            handleChangeBot={handleChangeBot}
+          />
+        }
+        {page === 'settings' &&
+          <Settings
+            state={state}
+          />
+        }
+        {
+          page === 'script' &&
+          <Script
+            state={state}
+          />
+        }
+      </Box>
 
     </Container>
   )

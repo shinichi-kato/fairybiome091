@@ -26,7 +26,7 @@ function initialStateFactory(palette) {
     avatarDir: "",
     backgroundColorIndex: 0,
     backgroundColorPalette: [...palette],
-    administrator: false,
+    administrator: null,
     userState: "init"
   }
 };
