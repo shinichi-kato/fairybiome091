@@ -70,7 +70,9 @@ export async function loadChatbot(firestore, id,collection) {
 
   if (sourceSnap.exists()) {
     // sourceを読み込む
-    source = sourceSnap.data();
+    sourceCells['main.json'] = sourceSnap.data();
+    source = sourceCells['main.json'];
+
     for (let cellName of source.biome) {
       let cellRef = doc(firestore, collection, id, "biome", cellName);
       let cellSnap = await getDoc(cellRef);
@@ -81,7 +83,7 @@ export async function loadChatbot(firestore, id,collection) {
     throw new Error(`chatbot ${id} not found`);
   }
 
-  return [source, sourceCells];
+  return sourceCells;
 }
 
 export async function uploadOrigin(firestore, name, main, biome) {

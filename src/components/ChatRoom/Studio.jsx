@@ -235,6 +235,7 @@ export default function Studio({ log, writeLog, closeness }) {
         justifyContent="space-between"
       >
         <FairyPanel
+          bot={bot}
           panelWidth={panelWidth}
         />
         {memorizedUserPanel}

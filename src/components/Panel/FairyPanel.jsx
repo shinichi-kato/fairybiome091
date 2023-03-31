@@ -1,10 +1,9 @@
-import React,{ useContext } from "react";
+import React from "react";
 import { withPrefix } from 'gatsby';
 import Box from '@mui/material/Box';
-import { BiomebotContext } from '../Biomebot-0.10/BiomebotProvider';
 
 
-export default function FairyPanel(props) {
+export default function FairyPanel({ bot, panelWidth }) {
   /*
     fairyのavatarと背景を表示する。
     props.status | 説明
@@ -14,12 +13,11 @@ export default function FairyPanel(props) {
   */
 
 
-  const bot = useContext(BiomebotContext);
   const width = 180;
-  const height = width * 4/3;
+  const height = width * 4 / 3;
 
   let bgColor = bot.isReady ? bot.backgroundColor : '#dddddd33';
-  
+
   return (
     <Box
       sx={{
@@ -27,7 +25,7 @@ export default function FairyPanel(props) {
         height: height,
         position: "relative"
       }}
-      >
+    >
       <Box
         sx={{
           width: width,
@@ -35,8 +33,8 @@ export default function FairyPanel(props) {
           borderRadius: "0% 100% 100% 0% / 100% 100% 0% 0%",
           backgroundColor: bgColor,
           position: "absolute",
-          bottom:0,
-          left:0,
+          bottom: 0,
+          left: 0,
         }}
       />
       {bot.isReady &&
@@ -56,7 +54,7 @@ export default function FairyPanel(props) {
             }}
             src={withPrefix(bot.avatarURL)}
             alt={withPrefix(bot.avatarURL)}
-             />
+          />
         </Box>
       }
     </Box>

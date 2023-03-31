@@ -42,9 +42,8 @@ const initialState = {
   botId: null,
   collection: null,
   page: 'settings',
-  currentCell: '',
-  main: {},
-  cells: {},
+  currentCell: null,
+  cells: {}
 }
 
 function reducer(state, action) {
@@ -59,11 +58,10 @@ function reducer(state, action) {
     case 'loading': {
       console.log(action.botId, action.collection)
       return {
-        botId: action.botId,
-        collection: action.collection,
+        botId: null,
+        collection: null,
         page: 'settings',
-        currentCell: '',
-        main: {},
+        currentCell: null,
         cells: {}
       }
     }
@@ -72,18 +70,17 @@ function reducer(state, action) {
         botId: action.botId,
         collection: action.collection,
         page: 'settings',
-        currentCell: '',
-        main: {},
+        currentCell: null,
         cells: {}
       }
     }
 
     case 'loaded': {
       return {
-        ...state,
+        botId: action.botId,
+        collection: action.collection,
         page: 'settings',
         currentCell: 'main.json',
-        main: { ...action.main },
         cells: { ...action.cells }
       }
     }
@@ -98,7 +95,7 @@ export default function Editor({ firestore }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    if (firestore && user.administrator !== null) {
+    if (firestore && user.administrator !== null && state.botId === null) {
       let botId, collection;
 
       if (!state.botId) {
@@ -116,9 +113,10 @@ export default function Editor({ firestore }) {
 
       if (botId) {
         (async () => {
-          dispatch({ type: 'loading', botId: botId, collection: collection });
-          const [main, cells] = await loadChatbot(firestore, botId, collection);
-          dispatch({ type: 'loaded', main: main, cells: cells });
+          dispatch({ type: 'loading' });
+          const cells = await loadChatbot(firestore, botId, collection);
+          
+          dispatch({ type: 'loaded', botId: botId, collection: collection ,cells:cells });
         })();
       } else {
         dispatch({ type: 'selectBot' });
@@ -147,7 +145,7 @@ export default function Editor({ firestore }) {
               <ChevronLeftIcon color="inherit"/>
             </IconButton>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              編集
+              {state.currentCell}
             </Typography>
           </Toolbar>
         </AppBar>
@@ -163,7 +161,7 @@ export default function Editor({ firestore }) {
         }
         {page === 'settings' &&
           <Settings
-            state={state}
+            settings={state}
           />
         }
         {
