@@ -11,7 +11,7 @@ import EnterlessStateMachine from './engine/enterless-state-machine';
 import BowEncoder from './engine/bow-encoder';
 import LogEncoder from './engine/log-encoder';
 
-const modules = {
+export const modules = {
   'BowEncoder': BowEncoder,
   'PatternEncoder': PatternEncoder,
   'LogEncoder': LogEncoder,

@@ -4,7 +4,18 @@ import Input from '@mui/material/Input';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
 import FairyPanel from '../Panel/FairyPanel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 
+
+import {modules} from '../Biomebot-0.10/useCells';
+
+const BOT_MODULES = modules.keys();
+const ENCODERS = BOT_MODULES.filter(m=>m.endsWith('Encoder'));
+const STATE_MACHINES = BOT_MODULES.filter(m=>m.endsWith('StateMachine'));
+const DECODERS = BOT_MODULES.filter(m=>m.endsWith('Decoder'))
+
+ 
 const initialState={
   description: "",
   updatedAt: null,
@@ -75,8 +86,8 @@ export default function Settings({settings}){
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(()=>{
+    console.log(settings)
     if(settings.currentCell !== null){
-      console.log(settings)
       dispatch({type:'load',cell:settings.cells[settings.currentCell]})
     }
   },[settings.botId,settings.currentCell,settings.cells]);
@@ -86,7 +97,10 @@ export default function Settings({settings}){
   }
 
   return (
-    <Grid container>
+    <Grid container
+      spacing={2}
+      padding={1}
+    >
       <Grid item xs={12}>
         <FairyPanel bot={{
           isReady: true,
@@ -95,17 +109,24 @@ export default function Settings({settings}){
         }} />
       </Grid>
       <Grid item xs={12}>
+        <Typography variant="h5">
+        {state.botDisplayName}
+        </Typography>
+      </Grid>
+            <Grid item xs={12}>
         <Input
           placeholder="チャットボットの説明"
           value={state.description}
           onChange={handleChangeDescription}
-          minRows={3}
+          maxRows={3}
           multiline
+          fullWidth
+          sx={{
+            backgroundColor: "#ffffff",
+            p: 1
+          }}
         />
 
-      </Grid>
-      <Grid item xs={12}>
-        {state.botDisplayName}
       </Grid>
       <Grid item xs={7}>
         更新日
@@ -120,6 +141,52 @@ export default function Settings({settings}){
         <Switch
         />
       </Grid>
+      <Grid item xs={7}>
+        <Typography>
+          Encoder
+        </Typography>
+        <Typography variant="caption">
+          チャットボットへの入力を内部コードに変換する方法を指定します
+        </Typography>
+      </Grid>
+      <Grid item xs={5}>
+          <Select>
+            {ENCODERS.map(m=>
+              <MenuItem value={m}>{m}</MenuItem>
+            )}
+          </Select>
+      </Grid>
+      <Grid item xs={7}>
+        <Typography>
+          State Machine
+        </Typography>
+        <Typography variant="caption">
+          内部コードを用いて次の状態と出力を決める方法を指定します
+        </Typography>
+      </Grid>
+      <Grid item xs={5}>
+          <Select>
+            {STATE_MACHINES.map(m=>
+              <MenuItem value={m}>{m}</MenuItem>
+            )}
+          </Select>
+      </Grid>
+      <Grid item xs={7}>
+        <Typography>
+          Decoder
+        </Typography>
+        <Typography variant="caption">
+        内部コードで表された出力をテキストに変換する方法を指定します
+        </Typography>
+      </Grid>
+      <Grid item xs={5}>
+          <Select>
+            {DECODERS.map(m=>
+              <MenuItem value={m}>{m}</MenuItem>
+            )}
+          </Select>
+      </Grid>
+      
     </Grid>
   )
 }

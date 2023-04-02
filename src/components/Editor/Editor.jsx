@@ -51,12 +51,11 @@ function reducer(state, action) {
   switch (action.type) {
     case 'selectBot': {
       return {
-        ...state,
+        ...initialState,
         page: 'selectBot',
       }
     }
     case 'loading': {
-      console.log(action.botId, action.collection)
       return {
         botId: null,
         collection: null,
@@ -95,38 +94,47 @@ export default function Editor({ firestore }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    if (firestore && user.administrator !== null && state.botId === null) {
-      let botId, collection;
-
-      if (!state.botId) {
-        if (user.administrator) {
-          botId = null;
-          collection = null;
+    if(firestore && user.uid){
+      if(!state.botId && user.administrator !== null) {
+        console.log(state,user)
+        if(user.administrator){
+          dispatch({
+            type: 'selectBot'
+          });
         } else {
-          botId = user.uid;
-          collection = 'chatbot_active';
+          (async () => {
+            dispatch({ type: 'loading' });
+            const cells = await loadChatbot(
+              firestore, 
+              user.uid, 'chatbot_active');
+            
+            dispatch({
+              type: 'loaded', 
+              botId: user.uid,
+              collection: 'chatbot_active',
+              cells:cells });
+          })();
         }
-      } else {
-        botId = state.botId;
-        collection = state.collection;
-      }
-
-      if (botId) {
-        (async () => {
-          dispatch({ type: 'loading' });
-          const cells = await loadChatbot(firestore, botId, collection);
-          
-          dispatch({ type: 'loaded', botId: botId, collection: collection ,cells:cells });
-        })();
-      } else {
-        dispatch({ type: 'selectBot' });
       }
     }
-  }, [firestore, state.botId, state.collection, user.administrator, user.uid]);
+  },[firestore, user.administrator, state.botId, user.uid]);
 
   function handleChangeBot(botId, collection) {
-    dispatch({ type: 'changeBotId', botId: botId, collection: collection });
+    (async () => {
+      dispatch({ type: 'loading' });
+      const cells = await loadChatbot(
+        firestore, 
+        user.uid, collection);
+      
+      dispatch({
+        type: 'loaded', 
+        botId: botId, 
+        collection: collection,
+        cells:cells });
+    })();    
   }
+
+
 
   const page = state.page;
   return (
