@@ -8,15 +8,14 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 
 
-import {modules} from '../Biomebot-0.10/useCells';
+import { modules } from '../Biomebot-0.10/useCells';
 
-const BOT_MODULES = modules.keys();
-const ENCODERS = BOT_MODULES.filter(m=>m.endsWith('Encoder'));
-const STATE_MACHINES = BOT_MODULES.filter(m=>m.endsWith('StateMachine'));
-const DECODERS = BOT_MODULES.filter(m=>m.endsWith('Decoder'))
+const BOT_MODULES = Object.keys(modules);
+const ENCODERS = BOT_MODULES.filter(m => m.endsWith('Encoder'));const STATE_MACHINES = BOT_MODULES.filter(m => m.endsWith('StateMachine'));
+const DECODERS = BOT_MODULES.filter(m => m.endsWith('Decoder'))
 
- 
-const initialState={
+
+const initialState = {
   description: "",
   updatedAt: null,
   userDisplayName: "",
@@ -35,20 +34,20 @@ const initialState={
   script: [],
 };
 
-function getBotName(cell){
+function getBotName(cell) {
   console.log(cell)
-  let botName="";
-  if('{BOT_NAME}' in cell.memory){
-    botName=cell.memory['{BOT_NAME}'][0];
-    if(cell.userDisplayName && cell.userDiplayName !== ""){
-      botName+=`@${cell.userDisplayName}`
+  let botName = "";
+  if ('{BOT_NAME}' in cell.memory) {
+    botName = cell.memory['{BOT_NAME}'][0];
+    if (cell.userDisplayName && cell.userDiplayName !== "") {
+      botName += `@${cell.userDisplayName}`
     }
   }
   return botName;
 }
 
-function reducer(state,action){
-  switch(action.type){
+function reducer(state, action) {
+  switch (action.type) {
     case 'load': {
       const cell = action.cell;
       return {
@@ -58,19 +57,26 @@ function reducer(state,action){
       }
     }
 
-    case 'changeDesc' :{
+    case 'changeDesc': {
       return {
         ...state,
-        description:action.description
+        description: action.description
       }
     }
 
-    default: 
+    case 'changeModule': {
+      return {
+        ...state,
+        [action.module]:action.value
+      }
+    }
+
+    default:
       throw new Error(`invalid action ${action.type}`)
   }
 }
 
-export default function Settings({settings}){
+export default function Settings({ settings }) {
   /*
     state.currentCellが編集しているセル、
     state.cellsは辞書になっており、state.cells[cellName]でスクリプトを参照できる。
@@ -85,15 +91,19 @@ export default function Settings({settings}){
   */
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  useEffect(()=>{
+  useEffect(() => {
     console.log(settings)
-    if(settings.currentCell !== null){
-      dispatch({type:'load',cell:settings.cells[settings.currentCell]})
+    if (settings.currentCell !== null) {
+      dispatch({ type: 'load', cell: settings.cells[settings.currentCell] })
     }
-  },[settings.botId,settings.currentCell,settings.cells]);
+  }, [settings.botId, settings.currentCell, settings.cells]);
 
-  function handleChangeDescription(event){
-    dispatch({type:'changeDesc', description:event.target.value});
+  function handleChangeDescription(event) {
+    dispatch({ type: 'changeDesc', description: event.target.value });
+  }
+
+  function handleChangeModules(module,event){
+    dispatch({type:'changeModule', module:module, value:event.target.value});
   }
 
   return (
@@ -110,10 +120,10 @@ export default function Settings({settings}){
       </Grid>
       <Grid item xs={12}>
         <Typography variant="h5">
-        {state.botDisplayName}
+          {state.botDisplayName}
         </Typography>
       </Grid>
-            <Grid item xs={12}>
+      <Grid item xs={12}>
         <Input
           placeholder="チャットボットの説明"
           value={state.description}
@@ -150,11 +160,14 @@ export default function Settings({settings}){
         </Typography>
       </Grid>
       <Grid item xs={5}>
-          <Select>
-            {ENCODERS.map(m=>
-              <MenuItem value={m}>{m}</MenuItem>
-            )}
-          </Select>
+        <Select
+          value={state.encoder}
+          onChange={e=>handleChangeModules('encoder',e)}
+        >
+          {ENCODERS.map(m =>
+            <MenuItem value={m}>{m}</MenuItem>
+          )}
+        </Select>
       </Grid>
       <Grid item xs={7}>
         <Typography>
@@ -165,28 +178,45 @@ export default function Settings({settings}){
         </Typography>
       </Grid>
       <Grid item xs={5}>
-          <Select>
-            {STATE_MACHINES.map(m=>
-              <MenuItem value={m}>{m}</MenuItem>
-            )}
-          </Select>
+        <Select
+          value={state.stateMachine}
+          onChange={e=>handleChangeModules('stateMachine',e)}
+        >
+          {STATE_MACHINES.map(m =>
+            <MenuItem value={m}>{m}</MenuItem>
+          )}
+        </Select>
       </Grid>
       <Grid item xs={7}>
         <Typography>
           Decoder
         </Typography>
         <Typography variant="caption">
-        内部コードで表された出力をテキストに変換する方法を指定します
+          内部コードで表された出力をテキストに変換する方法を指定します
         </Typography>
       </Grid>
       <Grid item xs={5}>
-          <Select>
-            {DECODERS.map(m=>
-              <MenuItem value={m}>{m}</MenuItem>
-            )}
-          </Select>
+        <Select
+          value={state.decoder}
+          onChange={e=>handleChangeModules('decoder',e)}
+        >
+          {DECODERS.map(m =>
+            <MenuItem value={m}>{m}</MenuItem>
+          )}
+        </Select>
       </Grid>
-      
+      <Grid item xs={7}>
+        <Typography>正確さ(0＜x≦1)</Typography>
+        <Typography variant="caption">
+          値が大きいほど辞書のキーに対して正確に一致した場合に返答をします
+        </Typography>
+      </Grid>
+      <Grid item xs={5}>
+        <Input
+          sx={{backgroundColor: '#ffffff',p:1}}
+        />
+      </Grid>
+
     </Grid>
   )
 }

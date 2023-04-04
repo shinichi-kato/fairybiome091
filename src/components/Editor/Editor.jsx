@@ -142,7 +142,6 @@ export default function Editor({ firestore }) {
       maxWidth="xs"
       disableGutters
       sx={{
-        height: "100vh",
         backgroundColor: "#eeeeee",
       }}
     >
