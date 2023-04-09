@@ -2,10 +2,13 @@ import React, { useReducer, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
 import Input from '@mui/material/Input';
 import Switch from '@mui/material/Switch';
-import Typography from '@mui/material/Typography';
-import FairyPanel from '../Panel/FairyPanel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Typography from '@mui/material/Typography';
+import FairyPanel from '../Panel/FairyPanel';
+import CoeffInput from './CoeffInput';
+import NonNegInput from './NonNegInput';
+import BiomeLister from './BiomeLister';
 
 
 import { modules } from '../Biomebot-0.10/useCells';
@@ -64,10 +67,10 @@ function reducer(state, action) {
       }
     }
 
-    case 'changeModule': {
+    case 'changeValue': {
       return {
         ...state,
-        [action.module]:action.value
+        [action.key]:action.value
       }
     }
 
@@ -103,7 +106,11 @@ export default function Settings({ settings }) {
   }
 
   function handleChangeModules(module,event){
-    dispatch({type:'changeModule', module:module, value:event.target.value});
+    dispatch({type:'changeValue', key:module, value:event.target.value});
+  }
+
+  function handleChangeCoeff(coeffName,value){
+    dispatch({type: 'changeValue', key:coeffName, value:value})
   }
 
   return (
@@ -206,17 +213,55 @@ export default function Settings({ settings }) {
         </Select>
       </Grid>
       <Grid item xs={7}>
-        <Typography>正確さ(0＜x≦1)</Typography>
+        <Typography>正確性(precision, 0＜x＜1)</Typography>
         <Typography variant="caption">
           値が大きいほど辞書のキーに対して正確に一致した場合に返答をします
         </Typography>
       </Grid>
       <Grid item xs={5}>
-        <Input
-          sx={{backgroundColor: '#ffffff',p:1}}
+        <CoeffInput
+          value={state.precision}
+          handleChangeValue={v=>handleChangeCoeff('precision',v)}
         />
       </Grid>
-
+      <Grid item xs={7}>
+        <Typography>継続性(retention, 0＜x＜1)</Typography>
+        <Typography variant="caption">
+          今回返答したcellが次の返答で最優先になる確率です
+        </Typography>
+      </Grid>
+      <Grid item xs={5}>
+        <CoeffInput
+          value={state.retention}
+          handleChangeValue={v=>handleChangeCoeff('retention',v)}
+        />
+      </Grid>
+      <Grid item xs={7}>
+        <Typography>不応期(reftactory, 0以上の整数)</Typography>
+        <Typography variant="caption">
+          チャットボット退室後に不在となる回数
+        </Typography>
+      </Grid>
+      <Grid item xs={5}>
+        <NonNegInput
+          value={state.retention}
+          handleChangeValue={v=>handleChangeCoeff('refractory',v)}
+        />
+      </Grid>
+      <Grid item xs={7}>
+        <Typography>Biome</Typography>
+        <Typography variant="caption">
+          チャットボット退室後に次の返答が不在となる確率
+        </Typography>
+      </Grid>
+      <Grid item xs={5}>
+      </Grid>      
+      <Grid item xs={12}>
+        Biome
+        <BiomeLister 
+          cells={state.biome}
+        />
+      </Grid>
     </Grid>
   )
 }

@@ -96,7 +96,6 @@ export default function Editor({ firestore }) {
   useEffect(() => {
     if(firestore && user.uid){
       if(!state.botId && user.administrator !== null) {
-        console.log(state,user)
         if(user.administrator){
           dispatch({
             type: 'selectBot'
