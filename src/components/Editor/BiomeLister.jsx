@@ -6,19 +6,12 @@
 */
 
 import React from 'react';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemButton from '@mui/material/ListItemButton';
-import CellIcon from '@mui/icons-material/RecordVoiceOver';
+import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
+import ButtonGroup from '@mui/material/ButtonGroup';
+import IconButton from '@mui/material/IconButton';
 import UpIcon from '@mui/icons-material/KeyboardArrowUp';
 import DownIcon from '@mui/icons-material/KeyboardArrowDown';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import IconButton from '@mui/material/IconButton';
-import ButtonGroup from '@mui/material/ButtonGroup';
-
 
 function ButtonGroupIconButton(props) {
   // intercept props only implemented by `Button`
@@ -26,84 +19,87 @@ function ButtonGroupIconButton(props) {
   return <IconButton {...iconButtonProps} />;
 }
 
+
 export default function BiomeLister({
   cells,
   handleChangeCellOrder,
   handleAddCell,
   handleDeleteCell
 }) {
+  const apiRef = useGridApiRef();
 
-  function handleClickUp(index){
+  const rows = cells.map((cell, index) => ({
+    id: index,
+    cellName: cell
 
-    handleChangeCellOrder();
+  }));
+
+  function handleClickUp(id) {
+    /*
+      idで示されたcellを上の一つと入れ替える
+    */
+    if (id !== 0) {
+      const upperCell = apiRef.current.getRow(id - 1).cellName;
+      const lowerCell = apiRef.current.getRow(id).cellName;
+
+      apiRef.current.updateRows([{ id: id - 1, cellName: lowerCell }]);
+      apiRef.current.updateRows([{ id: id, cellName: upperCell }]);
+    }
   }
 
-  function handleClickDown(index){
-    handleChangeCellOrder();
+  function handleClickDown(id) {
+    /* 
+      idで示されたcellを下の一つと入れ替える
+    */
+    if (id < apiRef.current.getRowsCount() - 1) {
+      const upperCell = apiRef.current.getRow(id).cellName;
+      const lowerCell = apiRef.current.getRow(id + 1).cellName;
+
+      apiRef.current.updateRows([{ id: id, cellName: lowerCell }]);
+      apiRef.current.updateRows([{ id: id + 1, cellName: upperCell }]);
+    }
+
   }
 
-  function handleClickDelete(index){
-    
+  function handleClickDelete(id) {
+
   }
 
-  let items = cells.map((cell,index) =>
-    <ListItem
-      sx={{backgroundColor: "#dddddd", m:1}}
-      key={cell}
-
-      secondaryAction={
+  const columns = [
+    { field: 'cellName', headerName: 'セル名', width: 150, editable: true },
+    {
+      field: 'operation', headerName: '操作', width: 150,
+      disableClickEventBubbling: true,
+      renderCell: (params) =>
         <ButtonGroup variant="text" aria-label="outlined primary button group">
           <ButtonGroupIconButton
-            onClick={e=>handleClickUp(index)}
+            onClick={e => handleClickUp(params.id)}
           >
             <UpIcon />
           </ButtonGroupIconButton>
           <ButtonGroupIconButton
-            onClick={e=>handleClickDown(index)}
+            onClick={e => handleClickDown(params.id)}
           >
             <DownIcon />
           </ButtonGroupIconButton>
           <ButtonGroupIconButton
-            onClick={e=>handleClickDelete(index)}
+            onClick={e => handleClickDelete(params.id)}
           >
             <DeleteIcon />
           </ButtonGroupIconButton>
         </ButtonGroup>
-      }
-    >
-      <ListItemIcon>
-        <CellIcon />
-      </ListItemIcon>
-      <ListItemText
-        primary={cell}
-      />
-    </ListItem>
-  );
+    },
+  ];
 
-  items.push(
-    <ListItem
-      key={0}
-      sx={{backgroundColor: "#dddddd", m:1}}
-    >
-      <ListItemButton
-        onClick={handleAddCell}
-      >
-        <ListItemText primary="セルの追加" />
-        <ListItemIcon>
-          <AddIcon />
-        </ListItemIcon>
-      </ListItemButton>
-
-    </ListItem>
-  )
-
-  
 
   return (
-    <List>
-      {items}
-    </List>
+    <DataGrid
+      sx={{ height: "400px" }}
+      rows={rows}
+      columns={columns}
+      apiRef={apiRef}
+    />
   )
 
-}
 
+}

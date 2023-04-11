@@ -74,6 +74,13 @@ function reducer(state, action) {
       }
     }
 
+    case 'changeBiome': {
+      return {
+        ...state,
+        biome: [...action.biome]
+      }
+    }
+
     default:
       throw new Error(`invalid action ${action.type}`)
   }
@@ -111,6 +118,10 @@ export default function Settings({ settings }) {
 
   function handleChangeCoeff(coeffName,value){
     dispatch({type: 'changeValue', key:coeffName, value:value})
+  }
+
+  function handleChangeCellOrder(newCells){
+    dispatch({type: 'changeBiome', biome: newCells})
   }
 
   return (
@@ -258,8 +269,12 @@ export default function Settings({ settings }) {
       </Grid>      
       <Grid item xs={12}>
         Biome
+      </Grid>
+      <Grid item xs={12}>
         <BiomeLister 
           cells={state.biome}
+          handleChangeCellOrder={handleChangeCellOrder}
+          handleAddCell
         />
       </Grid>
     </Grid>
