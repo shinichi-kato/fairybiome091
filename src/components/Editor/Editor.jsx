@@ -37,6 +37,7 @@ import { loadChatbot } from '../../useFirebase';
 import Settings from './Settings';
 import Script from './Script';
 import BotSelector from './BotSelector';
+import {initialCellState} from './initialState';
 
 const initialState = {
   botId: null,
@@ -83,6 +84,25 @@ function reducer(state, action) {
         cells: { ...action.cells }
       }
     }
+
+    case 'addNewCell':{
+      const mainJson=state.cells['main.json'];
+      return {
+        ...state,
+        cells: {
+          ...state.cells,
+          ['main.json']:{
+            ...mainJson,
+            biome: [
+              ...mainJson.biome,
+              action.newCell
+            ]
+          },
+          [action.newCell]:{...initialCellState}
+        }
+      }
+    }
+
 
     default:
       throw new Error(`invalid action ${action.type}`)
@@ -133,6 +153,26 @@ export default function Editor({ firestore }) {
     })();    
   }
 
+  function handleAddNewCell(){
+    // 新しいセルの仮名を生成
+    const cells = Object.keys(state.cells);
+    const usedNumbers = cells.map(c=>{
+      let g = c.match(/^セル([0-9]+)$/);
+      if(g && g.length === 2){
+        return parseInt(g[1])
+      }
+      else {
+        return -1;
+      }
+    });
+    const newCell = `セル${Math.max(...usedNumbers)+1}`;
+
+    dispatch({
+      type: 'addNewCell',
+      newCell: newCell
+    })
+  }
+
 
 
   const page = state.page;
@@ -168,6 +208,7 @@ export default function Editor({ firestore }) {
         {page === 'settings' &&
           <Settings
             settings={state}
+            handleAddNewCell={handleAddNewCell}
           />
         }
         {

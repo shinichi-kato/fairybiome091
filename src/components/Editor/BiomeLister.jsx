@@ -11,7 +11,7 @@ import ButtonGroup from '@mui/material/ButtonGroup';
 import IconButton from '@mui/material/IconButton';
 import UpIcon from '@mui/icons-material/KeyboardArrowUp';
 import DownIcon from '@mui/icons-material/KeyboardArrowDown';
-import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 
 function ButtonGroupIconButton(props) {
   // intercept props only implemented by `Button`
@@ -44,6 +44,9 @@ export default function BiomeLister({
 
       apiRef.current.updateRows([{ id: id - 1, cellName: lowerCell }]);
       apiRef.current.updateRows([{ id: id, cellName: upperCell }]);
+      let newCells = [];
+      apiRef.current.getRowModels().forEach(c=>newCells.push(c=>c.cellName));
+      handleChangeCellOrder(newCells)
     }
   }
 
@@ -57,11 +60,15 @@ export default function BiomeLister({
 
       apiRef.current.updateRows([{ id: id, cellName: lowerCell }]);
       apiRef.current.updateRows([{ id: id + 1, cellName: upperCell }]);
+
+      let newCells = [];
+      apiRef.current.getRowModels().forEach(c=>newCells.push(c=>c.cellName));
+      handleChangeCellOrder(newCells)
     }
 
   }
 
-  function handleClickDelete(id) {
+  function handleClickEdit(id) {
 
   }
 
@@ -83,9 +90,9 @@ export default function BiomeLister({
             <DownIcon />
           </ButtonGroupIconButton>
           <ButtonGroupIconButton
-            onClick={e => handleClickDelete(params.id)}
+            onClick={e => handleClickEdit(params.id)}
           >
-            <DeleteIcon />
+            <EditIcon />
           </ButtonGroupIconButton>
         </ButtonGroup>
     },

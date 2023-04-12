@@ -1,0 +1,18 @@
+export const initialCellState = {
+    description: "",
+    updatedAt: null,
+    userDisplayName: "",
+    botDisplayName: "",
+    avatarDir: "",
+    backgroundColor: "",
+    npc: false,
+    encoder: "",
+    stateMachine: "",
+    decoder: "",
+    precision: 0.5,
+    retention: 0.8,
+    refractory: 4,
+    biome: [],
+    memory: {},
+    script: [],
+  };

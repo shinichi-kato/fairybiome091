@@ -2,6 +2,7 @@ import React, { useReducer, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
 import Input from '@mui/material/Input';
 import Switch from '@mui/material/Switch';
+import Button from '@mui/material/Button';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
@@ -12,30 +13,11 @@ import BiomeLister from './BiomeLister';
 
 
 import { modules } from '../Biomebot-0.10/useCells';
+import {initialCellState} from './initialState';
 
 const BOT_MODULES = Object.keys(modules);
 const ENCODERS = BOT_MODULES.filter(m => m.endsWith('Encoder'));const STATE_MACHINES = BOT_MODULES.filter(m => m.endsWith('StateMachine'));
 const DECODERS = BOT_MODULES.filter(m => m.endsWith('Decoder'))
-
-
-const initialState = {
-  description: "",
-  updatedAt: null,
-  userDisplayName: "",
-  botDisplayName: "",
-  avatarDir: "",
-  backgroundColor: "",
-  npc: false,
-  encoder: "",
-  stateMachine: "",
-  decoder: "",
-  precision: 0.5,
-  retention: 0.8,
-  refractory: 4,
-  biome: [],
-  memory: {},
-  script: [],
-};
 
 function getBotName(cell) {
   console.log(cell)
@@ -81,12 +63,19 @@ function reducer(state, action) {
       }
     }
 
+    case 'addNewCell': {
+      return {
+        ...state,
+        biome: [...state.biome,action.cell]
+      }
+    }
+
     default:
       throw new Error(`invalid action ${action.type}`)
   }
 }
 
-export default function Settings({ settings }) {
+export default function Settings({ settings, handleAddNewCell }) {
   /*
     state.currentCellが編集しているセル、
     state.cellsは辞書になっており、state.cells[cellName]でスクリプトを参照できる。
@@ -99,7 +88,7 @@ export default function Settings({ settings }) {
     state.botId
 
   */
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialCellState);
 
   useEffect(() => {
     console.log(settings)
@@ -122,6 +111,11 @@ export default function Settings({ settings }) {
 
   function handleChangeCellOrder(newCells){
     dispatch({type: 'changeBiome', biome: newCells})
+  }
+
+  function handleAddCell(){
+    const newCell = handleAddNewCell();
+    dispatch({type: 'addNewCell', cell:newCell})
   }
 
   return (
@@ -274,8 +268,10 @@ export default function Settings({ settings }) {
         <BiomeLister 
           cells={state.biome}
           handleChangeCellOrder={handleChangeCellOrder}
-          handleAddCell
         />
+        <Button
+          onClick={handleAddCell}
+        >セルの追加</Button>
       </Grid>
     </Grid>
   )
