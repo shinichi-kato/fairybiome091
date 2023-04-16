@@ -5,13 +5,15 @@
 
 */
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import IconButton from '@mui/material/IconButton';
 import UpIcon from '@mui/icons-material/KeyboardArrowUp';
 import DownIcon from '@mui/icons-material/KeyboardArrowDown';
 import EditIcon from '@mui/icons-material/Edit';
+
+import RejectedDialog from './RejectedDialog';
 
 function ButtonGroupIconButton(props) {
   // intercept props only implemented by `Button`
@@ -23,10 +25,10 @@ function ButtonGroupIconButton(props) {
 export default function BiomeLister({
   cells,
   handleChangeCellOrder,
-  handleAddCell,
-  handleDeleteCell
+  handleChangeCellName
 }) {
   const apiRef = useGridApiRef();
+  const [openRejectedDialog, setOpenRejectedDialog] = useState(null);
 
   const rows = cells.map((cell, index) => ({
     id: index,
@@ -45,7 +47,7 @@ export default function BiomeLister({
       apiRef.current.updateRows([{ id: id - 1, cellName: lowerCell }]);
       apiRef.current.updateRows([{ id: id, cellName: upperCell }]);
       let newCells = [];
-      apiRef.current.getRowModels().forEach(c=>newCells.push(c=>c.cellName));
+      apiRef.current.getRowModels().forEach(c => newCells.push(c.cellName));
       handleChangeCellOrder(newCells)
     }
   }
@@ -62,14 +64,19 @@ export default function BiomeLister({
       apiRef.current.updateRows([{ id: id + 1, cellName: upperCell }]);
 
       let newCells = [];
-      apiRef.current.getRowModels().forEach(c=>newCells.push(c=>c.cellName));
+      apiRef.current.getRowModels().forEach(c => newCells.push(c.cellName));
       handleChangeCellOrder(newCells)
     }
 
   }
 
   function handleClickEdit(id) {
+    // 保存するか聞く
+    // currentCellを切り替える
+  }
 
+  function handleCloseRejectedDialog() {
+    setOpenRejectedDialog(false);
   }
 
   const columns = [
@@ -99,13 +106,37 @@ export default function BiomeLister({
   ];
 
 
+  const processRowUpdate = useCallback((newRow, oldRow) =>
+    new Promise((resolve, reject) => {
+      // unique制約
+      if (newRow.cellName !== oldRow.cellName) {
+        if (newRow.cellName === 'main.json' ||
+          cells.indexOf(newRow.cellName) !== -1) {
+          setOpenRejectedDialog(true);
+          reject(oldRow);
+          return;
+        }
+      }
+      handleChangeCellName(oldRow.cellName, newRow.cellName);
+      resolve(newRow);
+    })
+    , [handleChangeCellName, cells]);
+
   return (
-    <DataGrid
-      sx={{ height: "400px" }}
-      rows={rows}
-      columns={columns}
-      apiRef={apiRef}
-    />
+    <>
+      <DataGrid
+        sx={{ height: "400px" }}
+        rows={rows}
+        columns={columns}
+        apiRef={apiRef}
+        processRowUpdate={processRowUpdate}
+      />
+      <RejectedDialog
+        open={openRejectedDialog}
+        handleClose={handleCloseRejectedDialog}
+      />
+    </>
+
   )
 
 

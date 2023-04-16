@@ -13,10 +13,10 @@ import BiomeLister from './BiomeLister';
 
 
 import { modules } from '../Biomebot-0.10/useCells';
-import {initialCellState} from './initialState';
+import { initialCellState } from './initialState';
 
 const BOT_MODULES = Object.keys(modules);
-const ENCODERS = BOT_MODULES.filter(m => m.endsWith('Encoder'));const STATE_MACHINES = BOT_MODULES.filter(m => m.endsWith('StateMachine'));
+const ENCODERS = BOT_MODULES.filter(m => m.endsWith('Encoder')); const STATE_MACHINES = BOT_MODULES.filter(m => m.endsWith('StateMachine'));
 const DECODERS = BOT_MODULES.filter(m => m.endsWith('Decoder'))
 
 function getBotName(cell) {
@@ -52,7 +52,7 @@ function reducer(state, action) {
     case 'changeValue': {
       return {
         ...state,
-        [action.key]:action.value
+        [action.key]: action.value
       }
     }
 
@@ -66,7 +66,7 @@ function reducer(state, action) {
     case 'addNewCell': {
       return {
         ...state,
-        biome: [...state.biome,action.cell]
+        biome: [...state.biome, action.cell]
       }
     }
 
@@ -75,7 +75,7 @@ function reducer(state, action) {
   }
 }
 
-export default function Settings({ settings, handleAddNewCell }) {
+export default function Settings({ settings, handleAddNewCell,handleChangeCellName }) {
   /*
     state.currentCellが編集しているセル、
     state.cellsは辞書になっており、state.cells[cellName]でスクリプトを参照できる。
@@ -101,21 +101,25 @@ export default function Settings({ settings, handleAddNewCell }) {
     dispatch({ type: 'changeDesc', description: event.target.value });
   }
 
-  function handleChangeModules(module,event){
-    dispatch({type:'changeValue', key:module, value:event.target.value});
+  function handleChangeModules(module, event) {
+    dispatch({ type: 'changeValue', key: module, value: event.target.value });
   }
 
-  function handleChangeCoeff(coeffName,value){
-    dispatch({type: 'changeValue', key:coeffName, value:value})
+  function handleChangeCoeff(coeffName, value) {
+    dispatch({ type: 'changeValue', key: coeffName, value: value })
   }
 
-  function handleChangeCellOrder(newCells){
-    dispatch({type: 'changeBiome', biome: newCells})
+  function handleChangeCellOrder(newCells) {
+    dispatch({ type: 'changeBiome', biome: newCells })
   }
 
-  function handleAddCell(){
+  function handleAddCell() {
     const newCell = handleAddNewCell();
-    dispatch({type: 'addNewCell', cell:newCell})
+    dispatch({ type: 'addNewCell', cell: newCell })
+  }
+
+  function handleDeleteCurrentCell(){
+
   }
 
   return (
@@ -174,7 +178,7 @@ export default function Settings({ settings, handleAddNewCell }) {
       <Grid item xs={5}>
         <Select
           value={state.encoder}
-          onChange={e=>handleChangeModules('encoder',e)}
+          onChange={e => handleChangeModules('encoder', e)}
         >
           {ENCODERS.map(m =>
             <MenuItem value={m}>{m}</MenuItem>
@@ -192,7 +196,7 @@ export default function Settings({ settings, handleAddNewCell }) {
       <Grid item xs={5}>
         <Select
           value={state.stateMachine}
-          onChange={e=>handleChangeModules('stateMachine',e)}
+          onChange={e => handleChangeModules('stateMachine', e)}
         >
           {STATE_MACHINES.map(m =>
             <MenuItem value={m}>{m}</MenuItem>
@@ -210,7 +214,7 @@ export default function Settings({ settings, handleAddNewCell }) {
       <Grid item xs={5}>
         <Select
           value={state.decoder}
-          onChange={e=>handleChangeModules('decoder',e)}
+          onChange={e => handleChangeModules('decoder', e)}
         >
           {DECODERS.map(m =>
             <MenuItem value={m}>{m}</MenuItem>
@@ -226,7 +230,7 @@ export default function Settings({ settings, handleAddNewCell }) {
       <Grid item xs={5}>
         <CoeffInput
           value={state.precision}
-          handleChangeValue={v=>handleChangeCoeff('precision',v)}
+          handleChangeValue={v => handleChangeCoeff('precision', v)}
         />
       </Grid>
       <Grid item xs={7}>
@@ -238,7 +242,7 @@ export default function Settings({ settings, handleAddNewCell }) {
       <Grid item xs={5}>
         <CoeffInput
           value={state.retention}
-          handleChangeValue={v=>handleChangeCoeff('retention',v)}
+          handleChangeValue={v => handleChangeCoeff('retention', v)}
         />
       </Grid>
       <Grid item xs={7}>
@@ -250,29 +254,43 @@ export default function Settings({ settings, handleAddNewCell }) {
       <Grid item xs={5}>
         <NonNegInput
           value={state.retention}
-          handleChangeValue={v=>handleChangeCoeff('refractory',v)}
+          handleChangeValue={v => handleChangeCoeff('refractory', v)}
         />
       </Grid>
-      <Grid item xs={7}>
-        <Typography>Biome</Typography>
-        <Typography variant="caption">
-          チャットボット退室後に次の返答が不在となる確率
-        </Typography>
-      </Grid>
-      <Grid item xs={5}>
-      </Grid>      
       <Grid item xs={12}>
         Biome
       </Grid>
       <Grid item xs={12}>
-        <BiomeLister 
-          cells={state.biome}
-          handleChangeCellOrder={handleChangeCellOrder}
-        />
-        <Button
-          onClick={handleAddCell}
-        >セルの追加</Button>
+        {
+          settings.currentCell === 'main.json' ?
+            <>
+              <BiomeLister
+                cells={state.biome}
+                handleChangeCellOrder={handleChangeCellOrder}
+                handleChangeCellName={handleChangeCellName}
+              />
+              <Button
+                onClick={handleAddCell}
+              >セルの追加</Button>
+            </>
+            :
+            <Typography
+              align="center"
+              sx={{ color: '#dddddd' }}
+            >このcellには設定できません
+            </Typography>
+        }
       </Grid>
+      {
+        settings.currentCell !== 'main.json' &&
+        <Grid item xs={12}>
+          {"このセルを削除する(戻せません)"}
+          <Button
+            onClick={handleDeleteCurrentCell}
+          >削除</Button>
+        </Grid>
+      }
+
     </Grid>
   )
 }

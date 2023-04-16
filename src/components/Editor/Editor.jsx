@@ -37,7 +37,7 @@ import { loadChatbot } from '../../useFirebase';
 import Settings from './Settings';
 import Script from './Script';
 import BotSelector from './BotSelector';
-import {initialCellState} from './initialState';
+import { initialCellState } from './initialState';
 
 const initialState = {
   botId: null,
@@ -85,22 +85,40 @@ function reducer(state, action) {
       }
     }
 
-    case 'addNewCell':{
-      const mainJson=state.cells['main.json'];
+    case 'addNewCell': {
+      const mainJson = state.cells['main.json'];
       return {
         ...state,
         cells: {
           ...state.cells,
-          ['main.json']:{
+          'main.json': {
             ...mainJson,
             biome: [
               ...mainJson.biome,
               action.newCell
             ]
           },
-          [action.newCell]:{...initialCellState}
+          [action.newCell]: { ...initialCellState }
         }
       }
+    }
+
+    case 'changeCellName': {
+      let newCells = {};
+      let oldCellNames = Object.keys(state.cells);
+      oldCellNames.forEach(cellName => {
+        if (cellName === action.oldName) {
+          newCells[action.newCell] = state.cells[action.oldCell]
+        } else {
+          newCells[cellName] = state.cells[cellName]
+        }
+      });
+
+      return {
+        ...state,
+        cells: newCells
+      }
+
     }
 
 
@@ -114,9 +132,9 @@ export default function Editor({ firestore }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    if(firestore && user.uid){
-      if(!state.botId && user.administrator !== null) {
-        if(user.administrator){
+    if (firestore && user.uid) {
+      if (!state.botId && user.administrator !== null) {
+        if (user.administrator) {
           dispatch({
             type: 'selectBot'
           });
@@ -124,48 +142,50 @@ export default function Editor({ firestore }) {
           (async () => {
             dispatch({ type: 'loading' });
             const cells = await loadChatbot(
-              firestore, 
+              firestore,
               user.uid, 'chatbot_active');
-            
+
             dispatch({
-              type: 'loaded', 
+              type: 'loaded',
               botId: user.uid,
               collection: 'chatbot_active',
-              cells:cells });
+              cells: cells
+            });
           })();
         }
       }
     }
-  },[firestore, user.administrator, state.botId, user.uid]);
+  }, [firestore, user.administrator, state.botId, user.uid]);
 
   function handleChangeBot(botId, collection) {
     (async () => {
       dispatch({ type: 'loading' });
       const cells = await loadChatbot(
-        firestore, 
+        firestore,
         user.uid, collection);
-      
+
       dispatch({
-        type: 'loaded', 
-        botId: botId, 
+        type: 'loaded',
+        botId: botId,
         collection: collection,
-        cells:cells });
-    })();    
+        cells: cells
+      });
+    })();
   }
 
-  function handleAddNewCell(){
+  function handleAddNewCell() {
     // 新しいセルの仮名を生成
     const cells = Object.keys(state.cells);
-    const usedNumbers = cells.map(c=>{
+    const usedNumbers = cells.map(c => {
       let g = c.match(/^セル([0-9]+)$/);
-      if(g && g.length === 2){
+      if (g && g.length === 2) {
         return parseInt(g[1])
       }
       else {
         return -1;
       }
     });
-    const newCell = `セル${Math.max(...usedNumbers)+1}`;
+    const newCell = `セル${Math.max(...usedNumbers) + 1}`;
 
     dispatch({
       type: 'addNewCell',
@@ -173,6 +193,9 @@ export default function Editor({ firestore }) {
     })
   }
 
+  function handleChangeCellName(oldName, newName) {
+    dispatch({ type: 'changeCellName', oldName: oldName, newName: newName });
+  }
 
 
   const page = state.page;
@@ -188,7 +211,7 @@ export default function Editor({ firestore }) {
         <AppBar position="static">
           <Toolbar>
             <IconButton>
-              <ChevronLeftIcon color="inherit"/>
+              <ChevronLeftIcon color="inherit" />
             </IconButton>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               {state.currentCell}
@@ -209,6 +232,7 @@ export default function Editor({ firestore }) {
           <Settings
             settings={state}
             handleAddNewCell={handleAddNewCell}
+            handleChangeCellName={handleChangeCellName}
           />
         }
         {
