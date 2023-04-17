@@ -11,7 +11,6 @@ import CoeffInput from './CoeffInput';
 import NonNegInput from './NonNegInput';
 import BiomeLister from './BiomeLister';
 
-
 import { modules } from '../Biomebot-0.10/useCells';
 import { initialCellState } from './initialState';
 
@@ -20,15 +19,17 @@ const ENCODERS = BOT_MODULES.filter(m => m.endsWith('Encoder')); const STATE_MAC
 const DECODERS = BOT_MODULES.filter(m => m.endsWith('Decoder'))
 
 function getBotName(cell) {
-  console.log(cell)
-  let botName = "";
-  if ('{BOT_NAME}' in cell.memory) {
-    botName = cell.memory['{BOT_NAME}'][0];
-    if (cell.userDisplayName && cell.userDiplayName !== "") {
-      botName += `@${cell.userDisplayName}`
+  if ('memory' in cell) {
+    let botName = "";
+    if ('{BOT_NAME}' in cell.memory) {
+      botName = cell.memory['{BOT_NAME}'][0];
+      if (cell.userDisplayName && cell.userDiplayName !== "") {
+        botName += `@${cell.userDisplayName}`
+      }
     }
+    return botName;
   }
-  return botName;
+  return false;
 }
 
 function reducer(state, action) {
@@ -75,7 +76,12 @@ function reducer(state, action) {
   }
 }
 
-export default function Settings({ settings, handleAddNewCell,handleChangeCellName }) {
+export default function Settings({
+  settings,
+  handleAddNewCell,
+  handleChangeCellName,
+  handleChangeCurrentCell
+}) {
   /*
     state.currentCellが編集しているセル、
     state.cellsは辞書になっており、state.cells[cellName]でスクリプトを参照できる。
@@ -118,7 +124,7 @@ export default function Settings({ settings, handleAddNewCell,handleChangeCellNa
     dispatch({ type: 'addNewCell', cell: newCell })
   }
 
-  function handleDeleteCurrentCell(){
+  function handleDeleteCurrentCell() {
 
   }
 
@@ -127,41 +133,47 @@ export default function Settings({ settings, handleAddNewCell,handleChangeCellNa
       spacing={2}
       padding={1}
     >
-      <Grid item xs={12}>
-        <FairyPanel bot={{
-          isReady: true,
-          avatarURL: `${state.avatarDir}peace.svg`,
-          backgroundColor: state.backgroundColor,
-        }} />
-      </Grid>
-      <Grid item xs={12}>
-        <Typography variant="h5">
-          {state.botDisplayName}
-        </Typography>
-      </Grid>
-      <Grid item xs={12}>
-        <Input
-          placeholder="チャットボットの説明"
-          value={state.description}
-          onChange={handleChangeDescription}
-          maxRows={3}
-          multiline
-          fullWidth
-          sx={{
-            backgroundColor: "#ffffff",
-            p: 1
-          }}
-        />
+      {
+        settings.currentCell === 'main.json' &&
+        <>
+          <Grid item xs={12}>
+            <FairyPanel bot={{
+              isReady: true,
+              avatarURL: `${state.avatarDir}peace.svg`,
+              backgroundColor: state.backgroundColor,
+            }} />
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="h5">
+              {state.botDisplayName}
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <Input
+              placeholder="チャットボットの説明"
+              value={state.description}
+              onChange={handleChangeDescription}
+              maxRows={3}
+              multiline
+              fullWidth
+              sx={{
+                backgroundColor: "#ffffff",
+                p: 1
+              }}
+            />
 
-      </Grid>
+          </Grid>
+          <Grid item xs={7}>
+            <Typography variant="body2">ユーザはこのチャットボットを所有できない</Typography>
+          </Grid>
+
+        </>
+      }
       <Grid item xs={7}>
         更新日
       </Grid>
       <Grid item xs={5}>
         <Typography align="right">{state.updatedAt}</Typography>
-      </Grid>
-      <Grid item xs={7}>
-        <Typography variant="body2">ユーザはこのチャットボットを所有できない</Typography>
       </Grid>
       <Grid item xs={5}>
         <Switch
@@ -181,7 +193,7 @@ export default function Settings({ settings, handleAddNewCell,handleChangeCellNa
           onChange={e => handleChangeModules('encoder', e)}
         >
           {ENCODERS.map(m =>
-            <MenuItem value={m}>{m}</MenuItem>
+            <MenuItem value={m} key={m}>{m}</MenuItem>
           )}
         </Select>
       </Grid>
@@ -199,7 +211,7 @@ export default function Settings({ settings, handleAddNewCell,handleChangeCellNa
           onChange={e => handleChangeModules('stateMachine', e)}
         >
           {STATE_MACHINES.map(m =>
-            <MenuItem value={m}>{m}</MenuItem>
+            <MenuItem value={m} key={m}>{m}</MenuItem>
           )}
         </Select>
       </Grid>
@@ -217,7 +229,7 @@ export default function Settings({ settings, handleAddNewCell,handleChangeCellNa
           onChange={e => handleChangeModules('decoder', e)}
         >
           {DECODERS.map(m =>
-            <MenuItem value={m}>{m}</MenuItem>
+            <MenuItem value={m} key={m}>{m}</MenuItem>
           )}
         </Select>
       </Grid>
@@ -268,6 +280,7 @@ export default function Settings({ settings, handleAddNewCell,handleChangeCellNa
                 cells={state.biome}
                 handleChangeCellOrder={handleChangeCellOrder}
                 handleChangeCellName={handleChangeCellName}
+                handleChangeCurrentCell={handleChangeCurrentCell}
               />
               <Button
                 onClick={handleAddCell}

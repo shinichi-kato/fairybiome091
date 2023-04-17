@@ -25,10 +25,11 @@ function ButtonGroupIconButton(props) {
 export default function BiomeLister({
   cells,
   handleChangeCellOrder,
-  handleChangeCellName
+  handleChangeCellName,
+  handleChangeCurrentCell
 }) {
   const apiRef = useGridApiRef();
-  const [openRejectedDialog, setOpenRejectedDialog] = useState(null);
+  const [openRejectedDialog, setOpenRejectedDialog] = useState(false);
 
   const rows = cells.map((cell, index) => ({
     id: index,
@@ -71,8 +72,9 @@ export default function BiomeLister({
   }
 
   function handleClickEdit(id) {
-    // 保存するか聞く
     // currentCellを切り替える
+    const cell = apiRef.current.getRow(id);
+    handleChangeCurrentCell(cell.cellName);
   }
 
   function handleCloseRejectedDialog() {

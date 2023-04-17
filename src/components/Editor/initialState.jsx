@@ -1,7 +1,7 @@
 export const initialCellState = {
     description: "",
     updatedAt: null,
-    userDisplayName: "",
+    userDisplayName: false,
     botDisplayName: "",
     avatarDir: "",
     backgroundColor: "",

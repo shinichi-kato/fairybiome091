@@ -37,6 +37,7 @@ import { loadChatbot } from '../../useFirebase';
 import Settings from './Settings';
 import Script from './Script';
 import BotSelector from './BotSelector';
+import SaveConfirmDialog from './SaveConfirmDialog';
 import { initialCellState } from './initialState';
 
 const initialState = {
@@ -44,7 +45,8 @@ const initialState = {
   collection: null,
   page: 'settings',
   currentCell: null,
-  cells: {}
+  cells: {},
+  openSaveConfirmDialog: false
 }
 
 function reducer(state, action) {
@@ -119,6 +121,35 @@ function reducer(state, action) {
         cells: newCells
       }
 
+    }
+
+    case 'changeCurrentCell': {
+      return {
+        ...state,
+        currentCell: action.currentCell
+      }
+    }
+
+    case 'back': {
+      if (state.currentCell !== 'main.json') {
+        return {
+          ...state,
+          currentCell: 'main.json',
+          openSaveConfirmDialog: false
+        }
+      } else {
+        return {
+          ...state,
+          openSaveConfirmDialog: true
+        }
+      }
+    }
+
+    case 'closeSaveConfirmDialog': {
+      return {
+        ...state,
+        openSaveConfirmDialog: false
+      }
     }
 
 
@@ -197,6 +228,23 @@ export default function Editor({ firestore }) {
     dispatch({ type: 'changeCellName', oldName: oldName, newName: newName });
   }
 
+  function handleChangeCurrentCell(currentCell) {
+    document.body.scrollTo({ top: 0, behavior: "smooth" });
+    dispatch({ type: 'changeCurrentCell', currentCell: currentCell })
+  }
+
+  function handleClickBack() {
+    dispatch({ type: 'back' })
+  }
+
+  function handleCloseSaveConfirmDialog(){
+    dispatch({type: 'closeSaveConfirmDialog'})
+  }
+
+  function handleSave(){
+    // クラウドへ保存
+  }
+
 
   const page = state.page;
   return (
@@ -210,7 +258,9 @@ export default function Editor({ firestore }) {
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
-            <IconButton>
+            <IconButton
+              onClick={handleClickBack}
+            >
               <ChevronLeftIcon color="inherit" />
             </IconButton>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -233,6 +283,16 @@ export default function Editor({ firestore }) {
             settings={state}
             handleAddNewCell={handleAddNewCell}
             handleChangeCellName={handleChangeCellName}
+            handleChangeCurrentCell={handleChangeCurrentCell}
+          />
+        }
+        {
+          state.openSaveConfirmDialog &&
+          <SaveConfirmDialog
+            open={state.openSaveConfirmDialog}
+            handleClose={handleCloseSaveConfirmDialog}
+            handleExecute={handleSave}
+          
           />
         }
         {
