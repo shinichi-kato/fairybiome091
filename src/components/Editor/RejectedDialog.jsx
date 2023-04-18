@@ -6,7 +6,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 
 
-export default function RejectedDialog({open, handleClose}){
+export default function RejectedDialog({open, message, handleClose}){
 return (
   <Dialog
         open={open}
@@ -15,7 +15,7 @@ return (
       >
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            セルの名前が重複しています。違う名前にしてください。
+            {message}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

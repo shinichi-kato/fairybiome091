@@ -10,6 +10,7 @@ import FairyPanel from '../Panel/FairyPanel';
 import CoeffInput from './CoeffInput';
 import NonNegInput from './NonNegInput';
 import BiomeLister from './BiomeLister';
+import MemoryEditor from './MemoryEditor';
 
 import { modules } from '../Biomebot-0.10/useCells';
 import { initialCellState } from './initialState';
@@ -71,6 +72,56 @@ function reducer(state, action) {
       }
     }
 
+    case 'changeMemoryItem': {
+      /* actionにoldKey, newKey, newValuesが渡される 
+        newValuesがnullの場合はそのアイテムを削除する
+        keyが変わっていたらoldKeyは削除する
+        
+      */
+      let m = {};
+      const oldKey = action.oldKey;
+      const newKey = action.newKey;
+
+      if (oldKey === null){
+        // アイテムの追加
+        m = {...state.memory}
+        m[newKey] = action.newValues.split(',')
+        return {
+          ...state,
+          memory:m
+        }
+      }
+      if (action.newValues === null) {
+        // アイテムの削除
+        for(let k in Object.keys(state.memory)){
+          if(k !== oldKey){
+            m[k]=state.memory[k]
+          }
+        }
+
+      } else {
+        // キーの書き換え
+        const newValues = action.newValues.split(',')
+        if (oldKey !== newKey) {
+          for (let k in Object.keys(state.memory)) {
+            if (k !== oldKey) {
+              m[k] = state.memory[k]
+            }
+          }
+          m[newKey] = newValues;
+        } else {
+          // 値の上書き
+          m = { ...state.memory }
+          m[newKey] = newValues;
+        }
+      }
+
+      return {
+        ...state,
+        memory: m
+      }
+    }
+
     default:
       throw new Error(`invalid action ${action.type}`)
   }
@@ -126,6 +177,10 @@ export default function Settings({
 
   function handleDeleteCurrentCell() {
 
+  }
+
+  function handleChangeMemoryItem(oldKey, newKey, newValues) {
+    dispatch({ type: 'changeMemoryItem', oldKey: oldKey, newKey: newKey, newValues: newValues });
   }
 
   return (
@@ -293,6 +348,17 @@ export default function Settings({
             >このcellには設定できません
             </Typography>
         }
+      </Grid>
+      <Grid item xs={12}>
+        <Typography>Memory</Typography>
+        <Typography variant="caption">チャットボットの記憶内容。キーが大文字のものは必要です</Typography>
+
+      </Grid>
+      <Grid item xs={12}>
+        <MemoryEditor
+          memory={state.memory}
+          handleChangeMemoryItem={handleChangeMemoryItem}
+        />
       </Grid>
       {
         settings.currentCell !== 'main.json' &&

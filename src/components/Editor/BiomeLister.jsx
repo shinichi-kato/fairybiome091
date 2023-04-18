@@ -114,6 +114,7 @@ export default function BiomeLister({
       if (newRow.cellName !== oldRow.cellName) {
         if (newRow.cellName === 'main.json' ||
           cells.indexOf(newRow.cellName) !== -1) {
+            // ↑cellsから情報を取っているが、api経由にすること
           setOpenRejectedDialog(true);
           reject(oldRow);
           return;
@@ -135,6 +136,7 @@ export default function BiomeLister({
       />
       <RejectedDialog
         open={openRejectedDialog}
+        message="セルの名前が重複しています。違う名前にしてください。"
         handleClose={handleCloseRejectedDialog}
       />
     </>
