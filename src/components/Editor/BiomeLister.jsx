@@ -128,7 +128,7 @@ export default function BiomeLister({
   return (
     <>
       <DataGrid
-        sx={{ height: "400px" }}
+        sx={{ height: "300px" }}
         rows={rows}
         columns={columns}
         apiRef={apiRef}

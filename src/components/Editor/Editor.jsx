@@ -249,7 +249,7 @@ export default function Editor({ firestore }) {
   const page = state.page;
   return (
     <Container
-      maxWidth="xs"
+      maxWidth="sm"
       disableGutters
       sx={{
         backgroundColor: "#eeeeee",

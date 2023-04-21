@@ -1,7 +1,6 @@
 import React, { useReducer, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
 import Input from '@mui/material/Input';
-import Switch from '@mui/material/Switch';
 import Button from '@mui/material/Button';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -82,20 +81,20 @@ function reducer(state, action) {
       const oldKey = action.oldKey;
       const newKey = action.newKey;
 
-      if (oldKey === null){
+      if (oldKey === null) {
         // アイテムの追加
-        m = {...state.memory}
+        m = { ...state.memory }
         m[newKey] = action.newValues.split(',')
         return {
           ...state,
-          memory:m
+          memory: m
         }
       }
       if (action.newValues === null) {
         // アイテムの削除
-        for(let k in Object.keys(state.memory)){
-          if(k !== oldKey){
-            m[k]=state.memory[k]
+        for (let k in Object.keys(state.memory)) {
+          if (k !== oldKey) {
+            m[k] = state.memory[k]
           }
         }
 
@@ -119,6 +118,29 @@ function reducer(state, action) {
       return {
         ...state,
         memory: m
+      }
+    }
+
+    case 'addMemoryItem': {
+      // 新しいアイテム名を生成する
+      // const keys = Object.keys(state.memory);
+      // const usedNumbers = keys.map(c => {
+      //   let g = c.match(/^\{key([0-9]+)\}$/);
+      //   if (g && g.length === 2) {
+      //     return parseInt(g[1])
+      //   }
+      //   else {
+      //     return -1;
+      //   }
+      // });
+      // const newKey = `{key${Math.max(...usedNumbers) + 1}}`;
+
+      return {
+        ...state,
+        memory: {
+          ...state.key,
+          "":[]
+        }
       }
     }
 
@@ -183,6 +205,10 @@ export default function Settings({
     dispatch({ type: 'changeMemoryItem', oldKey: oldKey, newKey: newKey, newValues: newValues });
   }
 
+  function handleAddNewMemoryItem() {
+    dispatch({ type: 'addMemoryItem' })
+  }
+
   return (
     <Grid container
       spacing={2}
@@ -218,7 +244,7 @@ export default function Settings({
             />
 
           </Grid>
-          <Grid item xs={7}>
+          <Grid item xs={12}>
             <Typography variant="body2">ユーザはこのチャットボットを所有できない</Typography>
           </Grid>
 
@@ -229,10 +255,6 @@ export default function Settings({
       </Grid>
       <Grid item xs={5}>
         <Typography align="right">{state.updatedAt}</Typography>
-      </Grid>
-      <Grid item xs={5}>
-        <Switch
-        />
       </Grid>
       <Grid item xs={7}>
         <Typography>
@@ -357,8 +379,12 @@ export default function Settings({
       <Grid item xs={12}>
         <MemoryEditor
           memory={state.memory}
-          handleChangeMemoryItem={handleChangeMemoryItem}
+          handleChangeItem={handleChangeMemoryItem}
+          handleAddNewItem={handleAddNewMemoryItem}
         />
+        <Button
+          onClick={handleAddNewMemoryItem}
+        >追加</Button>
       </Grid>
       {
         settings.currentCell !== 'main.json' &&
