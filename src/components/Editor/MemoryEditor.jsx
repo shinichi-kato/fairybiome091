@@ -6,7 +6,7 @@
     一致する場合その値は空文字であることが許されず、そのitemは削除できない
 */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -16,27 +16,37 @@ function isCellEditable({ field, row }) {
   return field !== 'memKey' || !/\{[A-Z_]+\}/.test(row.memKey)
 }
 
-
+function buildRows(memory){
+  let i=0;
+  let rows = [];
+  memory.forEach((val,key)=>{
+    rows.push({
+      id: i,
+      memKey: key,
+      memValues: val.join(',')
+    });
+    i++;
+  })
+  return rows;
+}
 
 
 export default function MemoryEditor({
   memory,
   handleChangeItem,
-  handleAddNewItem,
+  isMemoryHaveNewItem,
+  handleTouch
 }) {
   const apiRef = useGridApiRef();
   const [rejectMessage, setRejectMessage] = useState(false);
 
-  function handleClickDelete(params) {
-    // エントリの削除
-    console.log(params)
-  }
+  const rows = buildRows(memory);
 
   const columns = [
     { field: 'memKey', headerName: 'キー', width: 150, editable: true },
     { field: 'memValues', headerName: '値', width: 300, editable: true },
     {
-      fiels: 'operation', headerName: '操作', width: 60,
+      field: 'operation', headerName: '操作', width: 60,
       disableClickEventBubbling: true,
       renderCell: (params) => {
         const disabled = /\{[A-Z_]+\}/.test(params.row.memKey);
@@ -49,15 +59,23 @@ export default function MemoryEditor({
       }}
   ];
 
-  let rows = Object.keys(memory).map((key, index) => ({
-    id: index,
-    memKey: key,
-    memValues: memory[key].join(',')
-  }));
+  // ------------------------------------------------
+  // エディタに新しいデータを入力したあとで非同期的に
+  // 次の空行が生成される。それを検知して空行を編集状態にする
+
+  useEffect(()=>{
+    if(isMemoryHaveNewItem){
+      // apiRef.current.scrollToIndexes(memory.size-1);
+      handleTouch();
+      apiRef.current.scrollToIndexes(memory.size-1)
+      apiRef.current.startRowEditMode({ id: memory.size-1 });
+    }
+  },[isMemoryHaveNewItem,apiRef,memory])
+
 
   const processRowUpdate = useCallback((newRow, oldRow) =>
     new Promise((resolve, reject) => {
-      console.log(oldRow)
+      console.log(oldRow,newRow)
       // keyが変更された場合：unique制約
       if (newRow.memKey !== oldRow.memKey) {
         if (newRow.memKey in memory) {
@@ -78,19 +96,17 @@ export default function MemoryEditor({
          場合、最下行に新しい行を追加する
       */
       handleChangeItem(oldRow.memKey, newRow.memKey, newRow.memValues);
-      if(oldRow.memKey === ""){
-        handleAddNewItem();
-      }
-
-      // 最下行を編集中で、その行のmemKeyが""ではなく、valueが書き換えられた
-      // 場合に新しい行を追加する
-
       resolve(newRow);
     })
-    , [handleChangeItem, handleAddNewItem, memory]);
+    , [handleChangeItem, memory]);
 
   function handleCloseRejectedDialog() {
     setRejectMessage(false);
+  }
+
+  function handleClickDelete(params) {
+    // エントリの削除
+    console.log(params)
   }
 
   return (
@@ -99,6 +115,7 @@ export default function MemoryEditor({
         sx={{ height: "400px" }}
         columns={columns}
         rows={rows}
+        editMode="row"
         apiRef={apiRef}
         isCellEditable={isCellEditable}
         processRowUpdate={processRowUpdate}

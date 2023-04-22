@@ -61,7 +61,7 @@ export default function useFirebase() {
 
 */
 
-export async function loadChatbot(firestore, id,collection) {
+export async function loadChatbot(firestore, id, collection) {
   collection ||= 'chatbot_active';
   const sourceRef = doc(firestore, collection, id);
   const sourceSnap = await getDoc(sourceRef);
@@ -70,14 +70,22 @@ export async function loadChatbot(firestore, id,collection) {
 
   if (sourceSnap.exists()) {
     // sourceを読み込む
-    sourceCells['main.json'] = sourceSnap.data();
+    let data = sourceSnap.data();
+    sourceCells['main.json'] = {
+      ...data,
+      memory: new Map(data.memory ? Object.entries(data.memory): [])
+    }
+
     source = sourceCells['main.json'];
 
     for (let cellName of source.biome) {
       let cellRef = doc(firestore, collection, id, "biome", cellName);
       let cellSnap = await getDoc(cellRef);
       let data = cellSnap.data();
-      sourceCells[cellName] = { ...data };
+      sourceCells[cellName] = {
+        ...data,
+        memory: new Map(data.memory ? Object.entries(data.memory): [])
+      };
     }
   } else {
     throw new Error(`chatbot ${id} not found`);
@@ -106,7 +114,7 @@ export async function uploadOrigin(firestore, name, main, biome) {
 
 }
 
-export async function branch(firestore, originName, uid,userName) {
+export async function branch(firestore, originName, uid, userName) {
   /*
     originNameで指定されるチャットボットのデータをchatbot_activeにuidという
     名前でコピーする。
@@ -116,11 +124,11 @@ export async function branch(firestore, originName, uid,userName) {
     場合は上書きする。
   */
 
-  const [source, sourceCells] = await loadChatbot(firestore, originName,'chatbot_origin');
+  const [source, sourceCells] = await loadChatbot(firestore, originName, 'chatbot_origin');
 
   // sourceにユーザ名を追加
   source.userDisplayName = userName;
-  
+
   // destに書き込む
   const batch = writeBatch(firestore);
   const botId = source.npc ? originName : uid;
@@ -137,7 +145,7 @@ export async function branch(firestore, originName, uid,userName) {
 }
 
 
-export async function download(firestore, id,collection) {
+export async function download(firestore, id, collection) {
   /*チャットボットのデータを以下のobj形式で返す
   {
     'main.json': {
@@ -149,7 +157,7 @@ export async function download(firestore, id,collection) {
     ...
   }
   */
-  const [source, sourceCells] =await loadChatbot(firestore, id,collection);
+  const [source, sourceCells] = await loadChatbot(firestore, id, collection);
   return {
     'main.json': source,
     ...sourceCells

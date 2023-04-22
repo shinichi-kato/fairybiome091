@@ -1,4 +1,4 @@
-export const initialCellState = {
+export const getInitialCellState = ()=> ({
     description: "",
     updatedAt: null,
     userDisplayName: false,
@@ -13,6 +13,6 @@ export const initialCellState = {
     retention: 0.8,
     refractory: 4,
     biome: [],
-    memory: {},
+    memory: new Map(),
     script: [],
-  };
+  });

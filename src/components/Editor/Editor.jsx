@@ -38,7 +38,7 @@ import Settings from './Settings';
 import Script from './Script';
 import BotSelector from './BotSelector';
 import SaveConfirmDialog from './SaveConfirmDialog';
-import { initialCellState } from './initialState';
+import { getInitialCellState } from './initialState';
 
 const initialState = {
   botId: null,
@@ -78,6 +78,7 @@ function reducer(state, action) {
     }
 
     case 'loaded': {
+      console.log(action.cells)
       return {
         botId: action.botId,
         collection: action.collection,
@@ -100,7 +101,7 @@ function reducer(state, action) {
               action.newCell
             ]
           },
-          [action.newCell]: { ...initialCellState }
+          [action.newCell]: { ...getInitialCellState() }
         }
       }
     }

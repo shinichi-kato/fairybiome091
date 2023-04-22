@@ -12,7 +12,7 @@ import BiomeLister from './BiomeLister';
 import MemoryEditor from './MemoryEditor';
 
 import { modules } from '../Biomebot-0.10/useCells';
-import { initialCellState } from './initialState';
+import { getInitialCellState } from './initialState';
 
 const BOT_MODULES = Object.keys(modules);
 const ENCODERS = BOT_MODULES.filter(m => m.endsWith('Encoder')); const STATE_MACHINES = BOT_MODULES.filter(m => m.endsWith('StateMachine'));
@@ -21,8 +21,8 @@ const DECODERS = BOT_MODULES.filter(m => m.endsWith('Decoder'))
 function getBotName(cell) {
   if ('memory' in cell) {
     let botName = "";
-    if ('{BOT_NAME}' in cell.memory) {
-      botName = cell.memory['{BOT_NAME}'][0];
+    if (cell.memory.has('{BOT_NAME}')) {
+      botName = cell.memory.get('{BOT_NAME}')[0];
       if (cell.userDisplayName && cell.userDiplayName !== "") {
         botName += `@${cell.userDisplayName}`
       }
@@ -33,41 +33,47 @@ function getBotName(cell) {
 }
 
 function reducer(state, action) {
+  console.log(`settings - ${action.type}`);
   switch (action.type) {
     case 'load': {
       const cell = action.cell;
       return {
         ...action.cell,
         botDisplayName: getBotName(cell),
-        script: []
+        script: [],
+        isMemoryHaveNewItem: false
       }
     }
 
     case 'changeDesc': {
       return {
         ...state,
-        description: action.description
+        description: action.description,
+        isMemoryHaveNewItem: false
       }
     }
 
     case 'changeValue': {
       return {
         ...state,
-        [action.key]: action.value
+        [action.key]: action.value,
+        isMemoryHaveNewItem: false
       }
     }
 
     case 'changeBiome': {
       return {
         ...state,
-        biome: [...action.biome]
+        biome: [...action.biome],
+        isMemoryHaveNewItem: false
       }
     }
 
     case 'addNewCell': {
       return {
         ...state,
-        biome: [...state.biome, action.cell]
+        biome: [...state.biome, action.cell],
+        isMemoryHaveNewItem: true
       }
     }
 
@@ -77,70 +83,65 @@ function reducer(state, action) {
         keyが変わっていたらoldKeyは削除する
         
       */
-      let m = {};
+      let m = new Map(state.memory);
       const oldKey = action.oldKey;
       const newKey = action.newKey;
 
       if (oldKey === null) {
         // アイテムの追加
-        m = { ...state.memory }
-        m[newKey] = action.newValues.split(',')
+        m.set(newKey, action.newValues.split(','))
         return {
           ...state,
-          memory: m
+          memory: m,
+          isMemoryHaveNewItem: true,
         }
       }
       if (action.newValues === null) {
         // アイテムの削除
-        for (let k in Object.keys(state.memory)) {
-          if (k !== oldKey) {
-            m[k] = state.memory[k]
-          }
-        }
+        m.delete(oldKey);
 
       } else {
         // キーの書き換え
         const newValues = action.newValues.split(',')
         if (oldKey !== newKey) {
-          for (let k in Object.keys(state.memory)) {
-            if (k !== oldKey) {
-              m[k] = state.memory[k]
-            }
-          }
-          m[newKey] = newValues;
+          m.delete(oldKey);
+          m.set(newKey,newValues);
         } else {
           // 値の上書き
-          m = { ...state.memory }
-          m[newKey] = newValues;
+          m.set(newKey, newValues);
+        }
+      }
+
+      if(oldKey.memKey === ""){
+        m.set("",[]);
+        return {
+          ...state,
+          memory: m,
+          isMemoryHaveNewItem: true
         }
       }
 
       return {
         ...state,
-        memory: m
+        memory: m,
+        isMemoryHaveNewItem: false
       }
     }
 
     case 'addMemoryItem': {
-      // 新しいアイテム名を生成する
-      // const keys = Object.keys(state.memory);
-      // const usedNumbers = keys.map(c => {
-      //   let g = c.match(/^\{key([0-9]+)\}$/);
-      //   if (g && g.length === 2) {
-      //     return parseInt(g[1])
-      //   }
-      //   else {
-      //     return -1;
-      //   }
-      // });
-      // const newKey = `{key${Math.max(...usedNumbers) + 1}}`;
-
+      const m= state.memory;
+      m.set("",[]);
       return {
         ...state,
-        memory: {
-          ...state.key,
-          "":[]
-        }
+        memory: m,
+        isMemoryHaveNewItem: true,
+      }
+    }
+
+    case 'touchMemory': {
+      return {
+        ...state,
+        isMemoryHaveNewItem: false
       }
     }
 
@@ -167,10 +168,12 @@ export default function Settings({
     state.botId
 
   */
-  const [state, dispatch] = useReducer(reducer, initialCellState);
+  const [state, dispatch] = useReducer(reducer, {
+    ...getInitialCellState(),
+    isMemoryHaveNewItem: false
+  });
 
   useEffect(() => {
-    console.log(settings)
     if (settings.currentCell !== null) {
       dispatch({ type: 'load', cell: settings.cells[settings.currentCell] })
     }
@@ -207,6 +210,10 @@ export default function Settings({
 
   function handleAddNewMemoryItem() {
     dispatch({ type: 'addMemoryItem' })
+  }
+
+  function handleTouchMemory() {
+    dispatch({type: 'touchMemory'})
   }
 
   return (
@@ -381,6 +388,8 @@ export default function Settings({
           memory={state.memory}
           handleChangeItem={handleChangeMemoryItem}
           handleAddNewItem={handleAddNewMemoryItem}
+          isMemoryHaveNewItem={state.isMemoryHaveNewItem}
+          handleTouch={handleTouchMemory}
         />
         <Button
           onClick={handleAddNewMemoryItem}
