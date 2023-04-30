@@ -83,7 +83,7 @@ function reducer(state, action) {
         keyが変わっていたらoldKeyは削除する
         
       */
-      let m = new Map(state.memory);
+      let m = state.memory;
       const oldKey = action.oldKey;
       const newKey = action.newKey;
 
@@ -112,7 +112,7 @@ function reducer(state, action) {
         }
       }
 
-      if(oldKey.memKey === ""){
+      if(oldKey === ""){
         m.set("",[]);
         return {
           ...state,
@@ -204,18 +204,10 @@ export default function Settings({
 
   }
 
-  function handleChangeMemoryItem(oldKey, newKey, newValues) {
-    dispatch({ type: 'changeMemoryItem', oldKey: oldKey, newKey: newKey, newValues: newValues });
+  function handleSaveMemory() {
   }
 
-  function handleAddNewMemoryItem() {
-    dispatch({ type: 'addMemoryItem' })
-  }
-
-  function handleTouchMemory() {
-    dispatch({type: 'touchMemory'})
-  }
-
+  
   return (
     <Grid container
       spacing={2}
@@ -386,14 +378,8 @@ export default function Settings({
       <Grid item xs={12}>
         <MemoryEditor
           memory={state.memory}
-          handleChangeItem={handleChangeMemoryItem}
-          handleAddNewItem={handleAddNewMemoryItem}
-          isMemoryHaveNewItem={state.isMemoryHaveNewItem}
-          handleTouch={handleTouchMemory}
+          handleSaveMemory={handleSaveMemory}
         />
-        <Button
-          onClick={handleAddNewMemoryItem}
-        >追加</Button>
       </Grid>
       {
         settings.currentCell !== 'main.json' &&
