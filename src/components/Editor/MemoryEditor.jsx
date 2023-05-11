@@ -12,15 +12,13 @@
   以上の制約をUIで実装するとともに、入力しやすいエディタとして次の機能を
   提供する。
   
+  * 開始時はviewモードで、既存セルをクリックするとeditモードに遷移する。
+    editモードから抜けるとviewモードに戻る。
+  * 最後にselectした行を記憶しておく。「行を追加」ボタンを押下したらappendモードに
+    遷移し、selectした行の次に行を新たに追加する。
+ * appendモードをenterKeyDownで抜けたら次の行をappendする。
+  * appendモードをenterKeyDown以外で抜けたらviewモードに遷移する。
   * 入力はrowモードで、行の編集終了時に上述の制約を満足しない場合rejectする。
-  * 新しい行(編集前のkeyが"")の入力が終わったとき、keyが空文字の行がなければ
-    新しく行を追加し、その行のeditモードに入る。
-   この状態を管理するためaddingRowIdという値を用いる。行の追加ボタンを押下する
-   ことで最終行の下に新しい行が追加され、そのRowIdがaddingRowIdに渡される。
-   追加した行の入力が終わると次の空行が作られ
-   フォーカスが移動しaddingRowIdが更新される。
-   updateRowIdに入った時点でaddingRowIdとnewRowのidが異なっていたら他の行の
-   編集であるためaddingRowIdをfalseにする。
 
 */
 
@@ -30,47 +28,129 @@ import {
   GridActionsCellItem,
   GridToolbarContainer,
   useGridApiRef,
-  gridVisibleColumnDefinitionsSelector,
   gridExpandedSortedRowIdsSelector,
 } from '@mui/x-data-grid';
+
 import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import globalChance from 'chance';
 const chanceId = globalChance();
 const randomId = () => chanceId.guid();
 
-const initialState = {
-  memory: [],
-  isChanged: false,
-  rejectMessage: false,
-  addingRowId: false,
 
-};
+const initialState = {
+  memory: [], // Mapオブジェクトをrow形式に変換して保持
+  editMode: "view", // view | edit | append
+  rowSelectionModel: [], // 選択中の行（DataGridでは最大一つ)
+  editRequest: false, // 行の追加が完了したらidを記憶。
+  memKeys: new Map(), // memKeyのunique制約を計算するためにkeyを保持
+  rejectMessage: false,
+}
 
 function reducer(state, action) {
+  console.log(`reducer MemoryEidtor - ${action.type}`)
   switch (action.type) {
-    case 'upkeep': {
+    case 'load': {
       let rows = [];
+      let memKeys = new Map();
       action.memory.forEach((val, key) => {
         rows.push({
           id: randomId(),
           memKey: key,
           memValues: val.join(',')
         });
-      })
+        memKeys.set(key, true);
+      });
       return {
         memory: rows,
+        memKeys: memKeys,
+        editMode: 'view',
+        rowSelectionModel: [],
+        editRequest: false,
         rejectMessage: false,
-        addingRowId: false,
-        isChanged: false
       }
     }
+
+    case 'changeMode': {
+      return {
+        ...state,
+        editMode: action.mode
+      }
+    }
+    case 'selectRow': {
+      return {
+        ...state,
+        rowSelectionModel: action.rowSelectionModel
+      }
+    }
+
+    case 'appendNextRow': {
+      let newRows = [];
+      const newId = randomId();
+      for (let row of state.memory) {
+        newRows.push(row);
+        if (row.id === action.currentRowId) {
+          newRows.push({ id: newId, memKey: "", memValues: "" });
+        }
+      }
+
+      return {
+        ...state,
+        memory: newRows,
+        editMode: 'append',
+        rowSelectionModel: [],
+        editRequest: newId,
+        rejectMessage: false
+      }
+    }
+
+    case 'appendLastRow': {
+      const newId = randomId();
+      return {
+        memory: [...state.memory,
+        { id: newId, memKey: "", memValues: "" }
+        ],
+        editMode: 'append',
+        rowSelectionModel: [],
+        editRequest: newId,
+        rejectMessage: false
+      }
+    }
+
+    case 'editRequest': {
+      return {
+        ...state,
+        editMode: 'edit',
+        rowSelectionModel: [],
+        editRequest: action.currentRowId
+      }
+    }
+
+    case 'editDispatched': {
+      return {
+        ...state,
+        rowSelectionModel: [],
+        editRequest: false,
+      }
+    }
+
+    case 'addKey': {
+      const newMemKeys = new Map(state.memKeys);
+      newMemKeys.set(action.key);
+      return {
+        ...state,
+        memKeys: newMemKeys
+      }
+    }
+
     case 'reject': {
       return {
         ...state,
-        rejectMessage: action.message
+        rejectMessage: action.message,
+        requireNextRow: false,
       }
     }
 
@@ -78,43 +158,6 @@ function reducer(state, action) {
       return {
         ...state,
         rejectMessage: false
-      }
-    }
-    case 'addRow': {
-      const id = randomId();
-      return {
-        ...state,
-        memory: [
-          ...state.memory,
-          { id: id, memKey: "", memValues: "" }
-        ],
-        rejectMessage: false,
-        addingRowId: id,
-      }
-    }
-
-    case 'editRow': {
-      const newRow = action.newRow;
-      if (state.addingRowId === newRow.id) {
-        // 追加モードが生きている→行を増やす
-        const id = randomId();
-        return {
-          ...state,
-          memory: [
-            ...state.memory,
-            newRow,
-            { id: id, memKey: "", memValues: "" }
-          ],
-          rejectMessage: false,
-          addingRowId: id
-        }
-      }
-
-      return {
-        ...state,
-        memory: state.mempry.map(i => i.id === newRow.id ? newRow : i),
-        rejectMessage: false,
-        addingRowId: false
       }
     }
 
@@ -127,50 +170,123 @@ function isCellEditable({ field, row }) {
   return field !== 'memKey' || !/\{[A-Z_]+\}/.test(row.memKey)
 }
 
-const EditToolbar = ({ handleAdd, isChanged, handleSaveMemory }) =>
+const EditToolbar = ({ handleAdd, handleSaveMemory }) =>
   <GridToolbarContainer>
     <Button color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
       行の追加
     </Button>
     <Button
       onClick={handleSaveMemory}
-      disabled={!isChanged}
     >
       保存
     </Button>
   </GridToolbarContainer>;
 
 
-
 export default function MemoryEditor({
-  memory, //Mapオブジェクト
-  handleSaveMemory,
+  memory, // Mapオブジェクト
+  handleSaveMemory
 }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const apiRef = useGridApiRef();
 
   useEffect(() => {
-    if (memory) {
-      dispatch({ type: 'upkeep', memory: memory })
-    }
-  }, [memory])
 
-  useEffect(() => {
-    if (state.addingRowId) {
-      // フォーカスをそのidの場所に移動
-      // インデックスを逆順にたどる
-      let ids = gridExpandedSortedRowIdsSelector(apiRef);
-      for (let i = ids.length + 1; i >= 0; i--) {
-        if (state.addingRowId === ids[i]) {
-          const column = gridVisibleColumnDefinitionsSelector(apiRef)[0];
-          apiRef.current.setCellFocus(i, column.field);
-          apiRef.current.startRowEditMode({ id: state.addingRowId });
-          return;
-        }
-      }
-      console.log("err")
+    if (memory.size !== 0) {
+      dispatch({ type: 'load', memory: memory })
+
     }
-  }, [state.addingRowId, apiRef])
+  }, [memory]);
+
+
+  const handleAdd = useCallback(() => {
+    /* select中の行の下に新しい行を追加。
+       selectされてなければ最下行に追加。
+       modeをappendに遷移する            */
+
+    if (state.rowSelectionModel.length !== 0) {
+      const rowId = state.rowSelectionModel[0];
+      dispatch({ type: 'appendNextRow', currentRowId: rowId });
+
+    } else {
+      // 最下を探し、空行でなければ追加
+      const rowIds = gridExpandedSortedRowIdsSelector(apiRef);
+      const row = apiRef.current.getRow(rowIds[rowIds.length - 1]);
+      if (row.memKey !== "") {
+        dispatch({ type: 'appendLastRow' });
+      } else {
+        // 空行が既存ならそこを編集
+        dispatch({ type: 'editRequest', currentRowId: row.id })
+      }
+
+    }
+
+
+  }, [apiRef, state.rowSelectionModel]);
+
+
+
+  function handleCellEditStop(params) {
+    const reason = params.reason;
+    if (reason === 'enterKeyDown' && params.row.memKey === "") {
+      dispatch({ type: 'changeMode', mode: 'append' })
+    } else {
+      dispatch({ type: 'changeMode', mode: 'view' })
+    }
+  }
+
+  /* */
+  useEffect(() => {
+    if (state.editRequest) {
+      apiRef.current.startRowEditMode({
+        id: state.editRequest,
+        fieldToFocus: "memKey"
+      });
+
+      dispatch({ type: 'editDispatched' })
+    }
+  }
+    , [state.editRequest, apiRef, state.rowSelectionModel]);
+
+
+  const processRowUpdate = useCallback((newRow, oldRow) =>
+    new Promise((resolve, reject) => {
+      console.log("rowUpdate", newRow, oldRow);
+      if (newRow.memKey !== "" || newRow.memValues !== "") {
+        // 0. 追加した直後はチェックしない
+
+        if (newRow.id !== oldRow.id && state.memKeys.has(newRow.memKey)) {
+          // 1. keyの unique 制約
+          return reject(new Error("キーは重複禁止です"));
+
+        } else if (!/\{[a-zA-Z_]+\}/.test(newRow.memKey)) {
+          // 2. keyは正規表現 /\{[a-zA-Z_]+\}/ と一致していることが要求される
+          return reject(new Error("キーは半角アルファベットまたは'_'からなる文字列を{}で囲った形式にして下さい"));
+        }
+
+        else if (newRow.memValues === "") {
+          // 4. valuesには NOT NULL 制約がある。
+          return reject(new Error("値は空にしないで下さい。','で区切ると複数設定できます。"));
+        } else {
+          return resolve(newRow);
+        }
+      } else {
+        // このresolveにより内部的にapiRef.current.updateRows([newRow])が実行される
+        resolve(newRow);
+        dispatch({ type: 'addKey', key: newRow.memKey })
+
+      }
+    }), [state.memKeys]);
+
+  const handleProcessRowUpdateError = useCallback((error) => {
+    dispatch({ type: 'reject', message: error.message });
+  }, []);
+
+
+
+
+
+
 
   const columns = [
     { field: 'memKey', headerName: 'キー', width: 150, editable: true },
@@ -192,60 +308,48 @@ export default function MemoryEditor({
     }
   ];
 
-  const processRowUpdate = useCallback((newRow, oldRow) =>
-    new Promise((resolve, reject) => {
-      // rejectすると変更は破棄されeditmodeのまま
-      // resolve(oldRow)すると変更せずviewmodeに抜ける
-      // resolve(newRow)すると変更してviewmodeに抜ける
-
-      if (memory.has(newRow.memKey)) {
-        // 1. keyの unique 制約
-        dispatch({ type: 'reject', message: "キーは重複しないようにして下さい" });
-        reject(oldRow);
-
-      } else if (!newRow.memKey.test(/\{[a-zA-Z_]+\}/)) {
-        // 2. keyは正規表現 /\{[a-zA-Z_]+\}/ と一致していることが要求される
-        dispatch({ type: 'reject', message: "キーは半角アルファベットまたは'_'からなる文字列を{}で囲った形式にして下さい" });
-        reject(oldRow);
-
-      } else if (newRow.values === "") {
-        // 4. valuesには NOT NULL 制約がある。
-        dispatch({ type: 'reject', message: "値は空にしないで下さい。','で区切ると複数設定できます。" });
-        reject(oldRow);
-
-      } else {
-
-        resolve(newRow);
-      }
-    }), [memory]);
+  function handleCloseRejectedDialog() {
+    dispatch({ type: 'close' });
+  }
 
   function handleDelete(params) {
 
   }
 
-  function handleAdd() {
-    dispatch({ type: 'addRow' });
-  }
-
-  function onRowEditStop(params, event) {
-    dispatch({ type: 'editRow', newRow: params });
+  function handleRowSelectionModelChange(model) {
+    dispatch({ type: 'selectRow', rowSelectionModel: model });
   }
 
   return (
-    <DataGrid
-      apiRef={apiRef}
-      sx={{ height: `${52 * 8}px` }}
-      rows={state.memory}
-      columns={columns}
-      editMode="row"
-      isCellEditable={isCellEditable}
-      processRowUpdate={processRowUpdate}
-      onRowEditStop={onRowEditStop}
-      slots={{
-        toolbar: EditToolbar,
-      }}
-      slotProps={{
-        toolbar: { handleAdd, isChanged: state.isChanged, handleSaveMemory },
-      }}
-    />)
+    <>
+      <DataGrid
+        apiRef={apiRef}
+        sx={{ height: `${52 * 8}px` }}
+        rows={state.memory}
+        columns={columns}
+        editMode="row"
+        onRowSelectionModelChange={handleRowSelectionModelChange}
+        rowSelectionModel={state.rowSelectionModel}
+        onCellEditStop={handleCellEditStop}
+        processRowUpdate={processRowUpdate}
+        onProcessRowUpdateError={handleProcessRowUpdateError}
+        isCellEditable={isCellEditable}
+        slots={{
+          toolbar: EditToolbar,
+        }}
+        slotProps={{
+          toolbar: { handleAdd, handleSaveMemory },
+        }}
+      />
+      <Snackbar
+        open={state.rejectMessage !== false}
+        onClose={handleCloseRejectedDialog}
+      >
+        <Alert severity="error" >
+          {state.rejectMessage}
+        </Alert>
+      </Snackbar>
+    </>
+  )
+
 }
