@@ -32,10 +32,11 @@ import {
 } from '@mui/x-data-grid';
 
 import Button from '@mui/material/Button';
-import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import AddOnIcon from '@mui/icons-material/AddCircle';
+import AddOffIcon from '@mui/icons-material/AddCircleOutline';
 import globalChance from 'chance';
 const chanceId = globalChance();
 const randomId = () => chanceId.guid();
@@ -43,7 +44,7 @@ const randomId = () => chanceId.guid();
 
 const initialState = {
   memory: [], // Mapオブジェクトをrow形式に変換して保持
-  editMode: "view", // view | edit | append
+  appendMode: false,
   rowSelectionModel: [], // 選択中の行（DataGridでは最大一つ)
   editRequest: false, // 行の追加が完了したらidを記憶。
   memKeys: new Map(), // memKeyのunique制約を計算するためにkeyを保持
@@ -67,7 +68,7 @@ function reducer(state, action) {
       return {
         memory: rows,
         memKeys: memKeys,
-        editMode: 'view',
+        appendMode: false,
         rowSelectionModel: [],
         editRequest: false,
         rejectMessage: false,
@@ -77,7 +78,7 @@ function reducer(state, action) {
     case 'changeMode': {
       return {
         ...state,
-        editMode: action.mode
+        appendMode: action.mode
       }
     }
     case 'selectRow': {
@@ -100,7 +101,7 @@ function reducer(state, action) {
       return {
         ...state,
         memory: newRows,
-        editMode: 'append',
+        appendMode: true,
         rowSelectionModel: [],
         editRequest: newId,
         rejectMessage: false
@@ -113,7 +114,7 @@ function reducer(state, action) {
         memory: [...state.memory,
         { id: newId, memKey: "", memValues: "" }
         ],
-        editMode: 'append',
+        appendMode: true,
         rowSelectionModel: [],
         editRequest: newId,
         rejectMessage: false
@@ -123,7 +124,6 @@ function reducer(state, action) {
     case 'editRequest': {
       return {
         ...state,
-        editMode: 'edit',
         rowSelectionModel: [],
         editRequest: action.currentRowId
       }
@@ -143,6 +143,31 @@ function reducer(state, action) {
       return {
         ...state,
         memKeys: newMemKeys
+      }
+    }
+
+    case 'update': {
+      let newRows = [];
+      for (let row of state.memory) {
+        if (row.id === action.newRow.id) {
+          newRows.push(action.newRow);
+        } else {
+          newRows.push(row);
+        }
+      }
+      const newMemKeys = new Map(state.memKeys);
+      newMemKeys.set(action.newRow.memKey);
+      let editRequest = state.editRequest;
+
+      if (state.appendMode) {
+        editRequest = randomId();
+        newRows.push({ id: editRequest, memKey: "", memValues: "" });
+      }
+      return {
+        ...state,
+        memory: newRows,
+        memKeys: newMemKeys,
+        editRequest: editRequest
       }
     }
 
@@ -170,10 +195,11 @@ function isCellEditable({ field, row }) {
   return field !== 'memKey' || !/\{[A-Z_]+\}/.test(row.memKey)
 }
 
-const EditToolbar = ({ handleAdd, handleSaveMemory }) =>
+const EditToolbar = ({ handleAdd, handleSaveMemory, state }) =>
   <GridToolbarContainer>
-    <Button color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
-      行の追加
+    <Button color="primary" startIcon={
+      state.appendMode ? <AddOnIcon /> : <AddOffIcon />} onClick={handleAdd}>
+      {state.appendMode ? "行の追加中" : "行の追加"}
     </Button>
     <Button
       onClick={handleSaveMemory}
@@ -203,35 +229,36 @@ export default function MemoryEditor({
     /* select中の行の下に新しい行を追加。
        selectされてなければ最下行に追加。
        modeをappendに遷移する            */
-
-    if (state.rowSelectionModel.length !== 0) {
-      const rowId = state.rowSelectionModel[0];
-      dispatch({ type: 'appendNextRow', currentRowId: rowId });
-
+    if (state.appendMode) {
+      dispatch({ type: "changeMode", mode: false });
     } else {
-      // 最下を探し、空行でなければ追加
-      const rowIds = gridExpandedSortedRowIdsSelector(apiRef);
-      const row = apiRef.current.getRow(rowIds[rowIds.length - 1]);
-      if (row.memKey !== "") {
-        dispatch({ type: 'appendLastRow' });
-      } else {
-        // 空行が既存ならそこを編集
-        dispatch({ type: 'editRequest', currentRowId: row.id })
-      }
+      if (state.rowSelectionModel.length !== 0) {
+        const rowId = state.rowSelectionModel[0];
+        dispatch({ type: 'appendNextRow', currentRowId: rowId });
 
+      } else {
+        // 最下を探し、空行でなければ追加
+        const rowIds = gridExpandedSortedRowIdsSelector(apiRef);
+        const row = apiRef.current.getRow(rowIds[rowIds.length - 1]);
+        if (row.memKey !== "") {
+          dispatch({ type: 'appendLastRow' });
+        } else {
+          // 空行が既存ならそこを編集
+          dispatch({ type: 'editRequest', currentRowId: row.id })
+        }
+      }
     }
 
-
-  }, [apiRef, state.rowSelectionModel]);
+  }, [apiRef, state.rowSelectionModel, state.appendMode]);
 
 
 
   function handleCellEditStop(params) {
     const reason = params.reason;
     if (reason === 'enterKeyDown' && params.row.memKey === "") {
-      dispatch({ type: 'changeMode', mode: 'append' })
+      dispatch({ type: 'changeMode', mode: true })
     } else {
-      dispatch({ type: 'changeMode', mode: 'view' })
+      dispatch({ type: 'changeMode', mode: false })
     }
   }
 
@@ -268,12 +295,13 @@ export default function MemoryEditor({
           // 4. valuesには NOT NULL 制約がある。
           return reject(new Error("値は空にしないで下さい。','で区切ると複数設定できます。"));
         } else {
+          dispatch({ type: 'update', newRow: newRow })
           return resolve(newRow);
         }
       } else {
         // このresolveにより内部的にapiRef.current.updateRows([newRow])が実行される
         resolve(newRow);
-        dispatch({ type: 'addKey', key: newRow.memKey })
+        dispatch({ type: 'update', newRow:newRow })
 
       }
     }), [state.memKeys]);
@@ -338,7 +366,7 @@ export default function MemoryEditor({
           toolbar: EditToolbar,
         }}
         slotProps={{
-          toolbar: { handleAdd, handleSaveMemory },
+          toolbar: { handleAdd, handleSaveMemory, state },
         }}
       />
       <Snackbar
