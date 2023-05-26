@@ -30,10 +30,13 @@
 import React, { useReducer, useEffect, useCallback } from 'react';
 import {
   DataGrid,
+  GridActionsCellItem,
+  GridToolbarContainer,
+  useGridApiRef,
+  gridExpandedSortedRowIdsSelector,
 } from '@mui/x-data-grid';
 
 import Button from '@mui/material/Button';
-import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -107,10 +110,14 @@ function reducer(state, action) {
   }
 }
 
+
 export default function ScriptDataGrid(props) {
   // props.fieldToFocus 追加モードで最初にフォーカスをセットするフィールド
 
-  const [state, dispatch] = useReducer(reducer, generateInitilaState(props.fieldToFocus));
+  const [state, dispatch] = useReducer(reducer, generateInitilaState(
+    props.rowModel,
+    props.fieldToFocus
+    ));
   const apiRef = useGridApiRef();
 
   const handleAdd = useCallback(() => {
@@ -152,6 +159,21 @@ export default function ScriptDataGrid(props) {
     }
   }, [apiRef, state.rowSelectionModel, state.rowModel]);
 
+  const EditToolbar = ({ handleAdd, handleSaveMemory, state }) =>
+  <GridToolbarContainer>
+    <Button color="primary" startIcon={
+      state.appendMode ? <AddOnIcon /> : <AddOffIcon />} onClick={handleAdd}>
+      {state.appendMode ? "行の追加中" : "行の追加"}
+    </Button>
+    <Button
+      onClick={handleSaveMemory}
+    >
+      保存
+    </Button>
+  </GridToolbarContainer>;
+
+
+
   function handleCellEditStop(params) {
     const reason = params.reason;
     if (reason === 'enterKeyDown' && params.row.memKey === "") {
@@ -188,7 +210,7 @@ export default function ScriptDataGrid(props) {
   }
 
   const newColumns = [
-    ...props.columns,
+    ...props.scriptColumns,
     {
       field: 'actions', headerName: '操作', width: 60,
       type: 'actions',
@@ -212,11 +234,18 @@ export default function ScriptDataGrid(props) {
         {...props}
         apiRef={apiRef}
         columns={newColumns}
+        rows={props.scriptRows}
         editMode="row"
         onRowSelectionModelChange={handleRowSelectionModelChange}
         rowSelectionModel={state.rowSelectionModel}
         onCellEditStop={handleCellEditStop}
         onProcessRowUpdateError={handleProcessRowUpdateError}
+        slots={{
+          toolbar: EditToolbar,
+        }}
+        slotProps={{
+          toolbar: { handleAdd, handleSaveMemory:props.handleSaveMemory, state },
+        }}
       />
       <Snackbar
         open={state.rejectMessage !== false}

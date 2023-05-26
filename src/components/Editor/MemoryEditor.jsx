@@ -22,33 +22,44 @@
 
 */
 
-import React, { useReducer, useCallback, useEffect } from 'react';
-import {
-  DataGrid,
-  GridActionsCellItem,
-  GridToolbarContainer,
-  useGridApiRef,
-  gridExpandedSortedRowIdsSelector,
-} from '@mui/x-data-grid';
-
+import React, { useCallback, useReducer, useEffect } from 'react';
+import ScriptDataGrid from './ScriptDataGrid';
 
 
 function isCellEditable({ field, row }) {
   return field !== 'memKey' || !/\{[A-Z_]+\}/.test(row.memKey)
 }
 
-const EditToolbar = ({ handleAdd, handleSaveMemory, state }) =>
-  <GridToolbarContainer>
-    <Button color="primary" startIcon={
-      state.appendMode ? <AddOnIcon /> : <AddOffIcon />} onClick={handleAdd}>
-      {state.appendMode ? "行の追加中" : "行の追加"}
-    </Button>
-    <Button
-      onClick={handleSaveMemory}
-    >
-      保存
-    </Button>
-  </GridToolbarContainer>;
+const initialState = {
+  memory: [],
+  keyMap: new Map(),
+}
+
+function reducer(state, action) {
+  console.log(`reducer MemoryEditor - ${action.type}`);
+  switch (action.type) {
+    case 'setMemory': {
+      const keyMap = new Map();
+      action.memory.forEach(item => keyMap.set(item.memKey, true));
+
+      return {
+        memory: action.memory,
+        keyMap: keyMap
+      }
+    }
+
+    case 'append': {
+      state.keyMap.set(action.item.memKey,true)
+      return {
+        memory: [...state.memory, action.item],
+        keyMap: state.keyMap
+      }
+    }
+
+    default:
+      throw new Error(`invalid action ${action.type}`)
+  }
+}
 
 
 export default function MemoryEditor({
@@ -56,14 +67,20 @@ export default function MemoryEditor({
   handleSaveMemory
 }) {
   const [state, dispatch] = useReducer(reducer, initialState);
- 
+
+  useEffect(()=>{
+    if(memory){
+      dispatch({type:'setMemory',memory:memory})
+    }
+  },[memory]);
+
   const processRowUpdate = useCallback((newRow, oldRow) =>
     new Promise((resolve, reject) => {
       console.log("rowUpdate", newRow, oldRow);
       if (newRow.memKey !== "" || newRow.memValues !== "") {
         // 0. 追加した直後はチェックしない
 
-        if (newRow.id !== oldRow.id && state.memKeys.has(newRow.memKey)) {
+        if (newRow.id !== oldRow.id && state.keyMap.has(newRow.memKey)) {
           // 1. keyの unique 制約
           return reject(new Error("キーは重複禁止です"));
 
@@ -82,10 +99,10 @@ export default function MemoryEditor({
       } else {
         // このresolveにより内部的にapiRef.current.updateRows([newRow])が実行される
         resolve(newRow);
-        dispatch({ type: 'update', newRow:newRow })
+        dispatch({ type: 'update', newRow: newRow })
 
       }
-    }), [state.memKeys]);
+    }), [state.keyMap]);
 
 
 
@@ -94,35 +111,22 @@ export default function MemoryEditor({
     { field: 'memValues', headerName: '値', width: 300, editable: true, flex: 1 },
   ];
 
+  const rowModel = {
+    memKey: "",
+    memValues: ""
+  };
+
   return (
-    <>
-      <ScriptDataGrid
-        sx={{ height: `${52 * 8}px` }}
-        rows={state.memory}
-        columns={columns}
-        editMode="row"
-        onRowSelectionModelChange={handleRowSelectionModelChange}
-        rowSelectionModel={state.rowSelectionModel}
-        onCellEditStop={handleCellEditStop}
-        processRowUpdate={processRowUpdate}
-        onProcessRowUpdateError={handleProcessRowUpdateError}
-        isCellEditable={isCellEditable}
-        slots={{
-          toolbar: EditToolbar,
-        }}
-        slotProps={{
-          toolbar: { handleAdd, handleSaveMemory, state },
-        }}
-      />
-      <Snackbar
-        open={state.rejectMessage !== false}
-        onClose={handleCloseRejectedDialog}
-      >
-        <Alert severity="error" >
-          {state.rejectMessage}
-        </Alert>
-      </Snackbar>
-    </>
+    <ScriptDataGrid
+      sx={{ height: `${52 * 8}px` }}
+      rowModel={rowModel}
+      scriptRows={state.memory}
+      scriptColumns={columns}
+      editMode="row"
+      processRowUpdate={processRowUpdate}
+      isCellEditable={isCellEditable}
+    />
+
   )
 
 }
