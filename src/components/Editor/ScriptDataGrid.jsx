@@ -67,7 +67,8 @@ function generateInitilaState(rowModel, fieldToFocus) {
     rowSelectionModel: [], // 選択中の行
     editReuest: false, // 行の追加が完了したらidを記憶
     fieldToFocus: fieldToFocus,
-    rowModel: rowModel,// 未記入のrowを定義
+    rowModel: rowModel,// 未記入状態のrowを定義
+    rejectMessage: false,
   }
 }
 
@@ -97,11 +98,26 @@ function reducer(state, action) {
       }
     }
 
-    case 'editReuqestDispatched': {
+    case 'editRequestDispatched': {
       return {
         ...state,
         rowSelectionModel: [],
         editRequest: false,
+      }
+    }
+
+    case 'reject': {
+      return {
+        ...state,
+        rejectMessage: action.message,
+        editRequest: false,
+      }
+    }
+
+    case 'close': {
+      return {
+        ...state,
+        rejectMessage: false
       }
     }
 
@@ -226,7 +242,7 @@ export default function ScriptDataGrid(props) {
         ]
       }
     }
-  ]
+  ];
 
   return (
     <>

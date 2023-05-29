@@ -24,7 +24,9 @@
 
 import React, { useCallback, useReducer, useEffect } from 'react';
 import ScriptDataGrid from './ScriptDataGrid';
-
+import globalChance from 'chance';
+const chanceId = globalChance();
+const randomId = () => chanceId.guid();
 
 function isCellEditable({ field, row }) {
   return field !== 'memKey' || !/\{[A-Z_]+\}/.test(row.memKey)
@@ -40,10 +42,19 @@ function reducer(state, action) {
   switch (action.type) {
     case 'setMemory': {
       const keyMap = new Map();
-      action.memory.forEach(item => keyMap.set(item.memKey, true));
+      const rows = [];
+
+      action.memory.forEach((val,key)=>{
+        rows.push({
+          id: randomId(),
+          memKey: key,
+          memValues: val.join(',')
+        });
+        keyMap.set(key,true);
+      });
 
       return {
-        memory: action.memory,
+        memory: rows,
         keyMap: keyMap
       }
     }
@@ -120,6 +131,7 @@ export default function MemoryEditor({
     <ScriptDataGrid
       sx={{ height: `${52 * 8}px` }}
       rowModel={rowModel}
+      fieldToFocus="memKey"
       scriptRows={state.memory}
       scriptColumns={columns}
       editMode="row"
