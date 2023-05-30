@@ -44,13 +44,13 @@ function reducer(state, action) {
       const keyMap = new Map();
       const rows = [];
 
-      action.memory.forEach((val,key)=>{
+      action.memory.forEach((val, key) => {
         rows.push({
           id: randomId(),
           memKey: key,
           memValues: val.join(',')
         });
-        keyMap.set(key,true);
+        keyMap.set(key, true);
       });
 
       return {
@@ -60,7 +60,7 @@ function reducer(state, action) {
     }
 
     case 'append': {
-      state.keyMap.set(action.item.memKey,true)
+      state.keyMap.set(action.item.memKey, true)
       return {
         memory: [...state.memory, action.item],
         keyMap: state.keyMap
@@ -79,11 +79,11 @@ export default function MemoryEditor({
 }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  useEffect(()=>{
-    if(memory){
-      dispatch({type:'setMemory',memory:memory})
+  useEffect(() => {
+    if (memory) {
+      dispatch({ type: 'setMemory', memory: memory })
     }
-  },[memory]);
+  }, [memory]);
 
   const processRowUpdate = useCallback((newRow, oldRow) =>
     new Promise((resolve, reject) => {
@@ -104,18 +104,21 @@ export default function MemoryEditor({
           // 4. valuesには NOT NULL 制約がある。
           return reject(new Error("値は空にしないで下さい。','で区切ると複数設定できます。"));
         } else {
-          dispatch({ type: 'update', newRow: newRow })
+          // dispatch({ type: 'update', newRow: newRow })
           return resolve(newRow);
         }
       } else {
         // このresolveにより内部的にapiRef.current.updateRows([newRow])が実行される
         resolve(newRow);
-        dispatch({ type: 'update', newRow: newRow })
+        // dispatch({ type: 'update', newRow: newRow })
 
       }
     }), [state.keyMap]);
 
-
+  function handleSave(newMap) {
+    props.handleSaveMemory(newMap)
+    
+  }
 
   const columns = [
     { field: 'memKey', headerName: 'キー', width: 150, editable: true },
@@ -134,7 +137,7 @@ export default function MemoryEditor({
       fieldToFocus="memKey"
       scriptRows={state.memory}
       scriptColumns={columns}
-      editMode="row"
+      handleSave={handleSave}
       processRowUpdate={processRowUpdate}
       isCellEditable={isCellEditable}
     />

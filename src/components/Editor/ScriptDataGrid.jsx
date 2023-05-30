@@ -151,7 +151,7 @@ export default function ScriptDataGrid(props) {
             newRows.push({ id: randomId(), ...state.rowModel });
           }
         })
-        props.handleSave(newRows);
+        handleSaveNewRows(newRows);
 
       } else {
         // 最下行が未記入でなければ追加
@@ -166,7 +166,7 @@ export default function ScriptDataGrid(props) {
             newRows.push({id:id, ...row});
           });
           newRows.push({id:randomId(), ...state.rowModel});
-          props.handleSave(newRows);
+          handleSaveNewRows(newRows);
         } else {
           // 未記入行があればそこを編集
           dispatch({type: 'editRequest', currentRowId: row.id})
@@ -175,14 +175,14 @@ export default function ScriptDataGrid(props) {
     }
   }, [apiRef, state.rowSelectionModel, state.rowModel]);
 
-  const EditToolbar = ({ handleAdd, handleSaveMemory, state }) =>
+  const EditToolbar = ({ handleAdd, handleSaveCurrentMemory, state }) =>
   <GridToolbarContainer>
     <Button color="primary" startIcon={
       state.appendMode ? <AddOnIcon /> : <AddOffIcon />} onClick={handleAdd}>
       {state.appendMode ? "行の追加中" : "行の追加"}
     </Button>
     <Button
-      onClick={handleSaveMemory}
+      onClick={handleSaveCurrentMemory}
     >
       保存
     </Button>
@@ -225,6 +225,28 @@ export default function ScriptDataGrid(props) {
     apiRef.current.updateRows([{ id: params.id, _action: 'delete' }]);
   }
 
+  function handleSaveNewRows(newRows){
+    // 与えられたnewRowsをMapに変換してsave。
+    // 行の追加が伴う場合
+    let rows = new Map();
+    for(let row of newRows){
+      rows.set(id,row)
+    }
+    props.handleSave(rows);
+
+  }
+  function handleSaveCurrentRows(){
+    // 現在apiが保持しているrowsをMapに変換してsave
+    // saveボタンのように行の追加が伴わない場合
+    let newRows = new Map();
+    const ids = apiRef.current.getAllRowIds();
+    for (let id of ids){
+      newRows.set(id,apiRef.current.getRow(id))
+    }
+    props.handleSave(newRows);
+
+  }
+
   const newColumns = [
     ...props.scriptColumns,
     {
@@ -260,7 +282,7 @@ export default function ScriptDataGrid(props) {
           toolbar: EditToolbar,
         }}
         slotProps={{
-          toolbar: { handleAdd, handleSaveMemory:props.handleSaveMemory, state },
+          toolbar: { handleAdd, handleSaveRows:handleSaveCurrentRows, state },
         }}
       />
       <Snackbar

@@ -77,72 +77,8 @@ function reducer(state, action) {
       }
     }
 
-    case 'changeMemoryItem': {
-      /* actionにoldKey, newKey, newValuesが渡される 
-        newValuesがnullの場合はそのアイテムを削除する
-        keyが変わっていたらoldKeyは削除する
-        
-      */
-      let m = state.memory;
-      const oldKey = action.oldKey;
-      const newKey = action.newKey;
-
-      if (oldKey === null) {
-        // アイテムの追加
-        m.set(newKey, action.newValues.split(','))
-        return {
-          ...state,
-          memory: m,
-          isMemoryHaveNewItem: true,
-        }
-      }
-      if (action.newValues === null) {
-        // アイテムの削除
-        m.delete(oldKey);
-
-      } else {
-        // キーの書き換え
-        const newValues = action.newValues.split(',')
-        if (oldKey !== newKey) {
-          m.delete(oldKey);
-          m.set(newKey,newValues);
-        } else {
-          // 値の上書き
-          m.set(newKey, newValues);
-        }
-      }
-
-      if(oldKey === ""){
-        m.set("",[]);
-        return {
-          ...state,
-          memory: m,
-          isMemoryHaveNewItem: true
-        }
-      }
-
-      return {
-        ...state,
-        memory: m,
-        isMemoryHaveNewItem: false
-      }
-    }
-
-    case 'addMemoryItem': {
-      const m= state.memory;
-      m.set("",[]);
-      return {
-        ...state,
-        memory: m,
-        isMemoryHaveNewItem: true,
-      }
-    }
-
-    case 'touchMemory': {
-      return {
-        ...state,
-        isMemoryHaveNewItem: false
-      }
+    case 'updateMemory': {
+      
     }
 
     default:
