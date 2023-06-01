@@ -42,15 +42,29 @@ function reducer(state, action) {
   switch (action.type) {
     case 'setMemory': {
       const keyMap = new Map();
-      const rows = [];
-
-      action.memory.forEach((val, key) => {
-        rows.push({
-          id: randomId(),
-          memKey: key,
-          memValues: val.join(',')
+      let rows = [];
+      if(Array.isArray(action.memory)){
+        rows = action.memory.map(row=>{
+          if('id' in row){
+            return row;
+          }
+          return {
+            'id': randomId(),
+            ...row
+          }
+        })        
+      } else {
+        action.memory.forEach((val,key) => {
+          rows.push({
+            id: randomId(),
+            memKey: key,
+            memValues: val.join(',')
+          })
         });
+      }
+      action.memory.forEach((val, key) => {
         keyMap.set(key, true);
+        
       });
 
       return {
@@ -115,11 +129,6 @@ export default function MemoryEditor({
       }
     }), [state.keyMap]);
 
-  function handleSave(newMap) {
-    props.handleSaveMemory(newMap)
-    
-  }
-
   const columns = [
     { field: 'memKey', headerName: 'キー', width: 150, editable: true },
     { field: 'memValues', headerName: '値', width: 300, editable: true, flex: 1 },
@@ -137,7 +146,7 @@ export default function MemoryEditor({
       fieldToFocus="memKey"
       scriptRows={state.memory}
       scriptColumns={columns}
-      handleSave={handleSave}
+      handleSave={handleSaveMemory}
       processRowUpdate={processRowUpdate}
       isCellEditable={isCellEditable}
     />

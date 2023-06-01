@@ -41,7 +41,6 @@ function reducer(state, action) {
         ...action.cell,
         botDisplayName: getBotName(cell),
         script: [],
-        isMemoryHaveNewItem: false
       }
     }
 
@@ -49,7 +48,6 @@ function reducer(state, action) {
       return {
         ...state,
         description: action.description,
-        isMemoryHaveNewItem: false
       }
     }
 
@@ -57,7 +55,6 @@ function reducer(state, action) {
       return {
         ...state,
         [action.key]: action.value,
-        isMemoryHaveNewItem: false
       }
     }
 
@@ -65,7 +62,6 @@ function reducer(state, action) {
       return {
         ...state,
         biome: [...action.biome],
-        isMemoryHaveNewItem: false
       }
     }
 
@@ -73,12 +69,14 @@ function reducer(state, action) {
       return {
         ...state,
         biome: [...state.biome, action.cell],
-        isMemoryHaveNewItem: true
       }
     }
 
-    case 'updateMemory': {
-      
+    case 'changeMemory': {
+      return {
+        ...state,
+        memory: action.memory
+      }
     }
 
     default:
@@ -104,10 +102,7 @@ export default function Settings({
     state.botId
 
   */
-  const [state, dispatch] = useReducer(reducer, {
-    ...getInitialCellState(),
-    isMemoryHaveNewItem: false
-  });
+  const [state, dispatch] = useReducer(reducer, getInitialCellState());
 
   useEffect(() => {
     if (settings.currentCell !== null) {
@@ -140,10 +135,11 @@ export default function Settings({
 
   }
 
-  function handleSaveMemory() {
+  function handleSaveMemory(memory) {
+    dispatch({ type: 'changeMemory', memory: memory })
   }
 
-  
+
   return (
     <Grid container
       spacing={2}

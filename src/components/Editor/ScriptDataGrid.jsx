@@ -133,8 +133,10 @@ export default function ScriptDataGrid(props) {
   const [state, dispatch] = useReducer(reducer, generateInitilaState(
     props.rowModel,
     props.fieldToFocus
-    ));
+  ));
   const apiRef = useGridApiRef();
+
+  const handleSave = props.handleSave;
 
   const handleAdd = useCallback(() => {
     if (state.appendMode) {
@@ -151,7 +153,7 @@ export default function ScriptDataGrid(props) {
             newRows.push({ id: randomId(), ...state.rowModel });
           }
         })
-        handleSaveNewRows(newRows);
+        handleSave(newRows);
 
       } else {
         // 最下行が未記入でなければ追加
@@ -160,33 +162,33 @@ export default function ScriptDataGrid(props) {
 
         if (isInclusive(state.rowModel, row)) {
           // rowModelと同じ=未記入の場合末尾に追記
-          const newRows= [];
+          const newRows = [];
           const oldRows = apiRef.current.getRowModels();
-          oldRows.forEach((row,id)=>{
-            newRows.push({id:id, ...row});
+          oldRows.forEach((row, id) => {
+            newRows.push({ id: id, ...row });
           });
-          newRows.push({id:randomId(), ...state.rowModel});
-          handleSaveNewRows(newRows);
+          newRows.push({ id: randomId(), ...state.rowModel });
+          handleSave(newRows);
         } else {
           // 未記入行があればそこを編集
-          dispatch({type: 'editRequest', currentRowId: row.id})
+          dispatch({ type: 'editRequest', currentRowId: row.id })
         }
       }
     }
-  }, [apiRef, state.rowSelectionModel, state.rowModel]);
+  }, [apiRef, handleSave, state.appendMode,state.rowSelectionModel, state.rowModel]);
 
-  const EditToolbar = ({ handleAdd, handleSaveCurrentMemory, state }) =>
-  <GridToolbarContainer>
-    <Button color="primary" startIcon={
-      state.appendMode ? <AddOnIcon /> : <AddOffIcon />} onClick={handleAdd}>
-      {state.appendMode ? "行の追加中" : "行の追加"}
-    </Button>
-    <Button
-      onClick={handleSaveCurrentMemory}
-    >
-      保存
-    </Button>
-  </GridToolbarContainer>;
+  const EditToolbar = ({ handleAdd, handleUpdateRows, state }) =>
+    <GridToolbarContainer>
+      <Button color="primary" startIcon={
+        state.appendMode ? <AddOnIcon /> : <AddOffIcon />} onClick={handleAdd}>
+        {state.appendMode ? "行の追加中" : "行の追加"}
+      </Button>
+      <Button
+        onClick={handleUpdateRows}
+      >
+        保存
+      </Button>
+    </GridToolbarContainer>;
 
 
 
@@ -221,29 +223,16 @@ export default function ScriptDataGrid(props) {
     dispatch({ type: 'selectRow', rowSelectionModel: model });
   }
 
-  function handleDelete(params){
+  function handleDelete(params) {
     apiRef.current.updateRows([{ id: params.id, _action: 'delete' }]);
   }
 
-  function handleSaveNewRows(newRows){
-    // 与えられたnewRowsをMapに変換してsave。
-    // 行の追加が伴う場合
-    let rows = new Map();
-    for(let row of newRows){
-      rows.set(id,row)
-    }
-    props.handleSave(rows);
-
-  }
-  function handleSaveCurrentRows(){
-    // 現在apiが保持しているrowsをMapに変換してsave
+    function handleUpdateRows() {
+    // 現在apiが保持しているrowsをsave
     // saveボタンのように行の追加が伴わない場合
-    let newRows = new Map();
-    const ids = apiRef.current.getAllRowIds();
-    for (let id of ids){
-      newRows.set(id,apiRef.current.getRow(id))
-    }
-    props.handleSave(newRows);
+    let rows = apiRef.current.getRowModels();
+    console.log(rows);
+    props.handleSave(rows);
 
   }
 
@@ -282,7 +271,7 @@ export default function ScriptDataGrid(props) {
           toolbar: EditToolbar,
         }}
         slotProps={{
-          toolbar: { handleAdd, handleSaveRows:handleSaveCurrentRows, state },
+          toolbar: { handleAdd, handleUpdateRows: handleUpdateRows, state },
         }}
       />
       <Snackbar
