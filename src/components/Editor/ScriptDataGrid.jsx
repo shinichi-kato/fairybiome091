@@ -50,6 +50,7 @@ function isInclusive(model, instance) {
   // modelに含まれるプロパティとその値がinstanceにすべて含まれていたらtrue
   for (let key in model) {
     if (key in instance) {
+
       if (instance[key] !== model[key]) {
         return false;
       }
@@ -147,28 +148,33 @@ export default function ScriptDataGrid(props) {
         const currentRowId = state.rowSelectionModel[0];
         const oldRows = apiRef.current.getRowModels();
         const newRows = []
+        let newRowId;
         oldRows.forEach((row, id) => {
           newRows.push({ id: id, ...row });
           if (currentRowId === id) {
-            newRows.push({ id: randomId(), ...state.rowModel });
+            newRowId=randomId();
+            newRows.push({ id: newRowId, ...state.rowModel });
           }
         })
         handleSave(newRows);
+        dispatch({type: 'editRequest', currentRowId: newRowId})
 
       } else {
         // 最下行が未記入でなければ追加
         const rowIds = gridExpandedSortedRowIdsSelector(apiRef);
         const row = apiRef.current.getRow(rowIds[rowIds.length - 1]);
-
-        if (isInclusive(state.rowModel, row)) {
+        let newRowId;
+        if (!isInclusive(state.rowModel, row)) {
           // rowModelと同じ=未記入の場合末尾に追記
           const newRows = [];
           const oldRows = apiRef.current.getRowModels();
           oldRows.forEach((row, id) => {
             newRows.push({ id: id, ...row });
           });
-          newRows.push({ id: randomId(), ...state.rowModel });
-          handleSave(newRows);
+          newRowId = randomId();
+          newRows.push({ id: newRowId, ...state.rowModel });
+          dispatch({type: 'editRequest', currentRowId: newRowId})
+          handleSave(newRows)
         } else {
           // 未記入行があればそこを編集
           dispatch({ type: 'editRequest', currentRowId: row.id })
@@ -196,6 +202,7 @@ export default function ScriptDataGrid(props) {
     const reason = params.reason;
     if (reason === 'enterKeyDown' && params.row.memKey === "") {
       dispatch({ type: 'setAppendMode', appendMode: true })
+      handleAdd();
     } else {
       dispatch({ type: 'setAppendMode', appendMode: false })
     }
@@ -231,7 +238,6 @@ export default function ScriptDataGrid(props) {
     // 現在apiが保持しているrowsをsave
     // saveボタンのように行の追加が伴わない場合
     let rows = apiRef.current.getRowModels();
-    console.log(rows);
     props.handleSave(rows);
 
   }
