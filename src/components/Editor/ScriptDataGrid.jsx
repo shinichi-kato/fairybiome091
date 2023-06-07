@@ -99,6 +99,14 @@ function reducer(state, action) {
       }
     }
 
+    case 'reserveEditRequest': {
+      return {
+        ...state,
+        appendMode: true,
+        rowSelectionModel: [],
+        editRequest: action.currentRowId
+      }
+    }
     case 'editRequestDispatched': {
       return {
         ...state,
@@ -157,7 +165,7 @@ export default function ScriptDataGrid(props) {
           }
         })
         handleSave(newRows);
-        dispatch({type: 'editRequest', currentRowId: newRowId})
+        dispatch({type: 'reserveEditRequest', currentRowId: newRowId})
 
       } else {
         // 最下行が未記入でなければ追加
@@ -173,7 +181,7 @@ export default function ScriptDataGrid(props) {
           });
           newRowId = randomId();
           newRows.push({ id: newRowId, ...state.rowModel });
-          dispatch({type: 'editRequest', currentRowId: newRowId})
+          dispatch({type: 'reserveEditRequest', currentRowId: newRowId})
           handleSave(newRows)
         } else {
           // 未記入行があればそこを編集
@@ -208,6 +216,9 @@ export default function ScriptDataGrid(props) {
     }
   }
 
+  // -----------------------------------------------------------------
+  // editRequestに対応して編集を開始
+
   useEffect(() => {
     if (state.editRequest) {
       apiRef.current.startRowEditMode({
@@ -218,6 +229,20 @@ export default function ScriptDataGrid(props) {
     }
   }, [state.editRequest, apiRef, state.fieldToFocus]);
 
+  // -----------------------------------------------------------------
+  // reserveEditRequestに対応して編集を開始
+  //
+
+  useEffect(()=>{
+    if(state.appendMode && state.editRequest){
+      apiRef.current.startRowEditMode({
+        id: state.editRequest,
+        fieldToFocus: state.fieldToFocus
+      });
+      dispatch({ type: 'editRequestDispatched' });
+    }
+  },[state.appendMode, props.scriptRows,apiRef, state.fieldToFocus,state.editRequest]);
+  
   const handleProcessRowUpdateError = useCallback((error) => {
     dispatch({ type: 'reject', message: error.message });
   }, []);
