@@ -28,7 +28,7 @@ import globalChance from 'chance';
 const chanceId = globalChance();
 const randomId = () => chanceId.guid();
 
-function isCellEditable({ field, row }) {
+function isRowEditable({ field, row }) {
   return field !== 'memKey' || !/\{[A-Z_]+\}/.test(row.memKey)
 }
 
@@ -148,7 +148,7 @@ export default function MemoryEditor({
       scriptColumns={columns}
       handleSave={handleSaveMemory}
       processRowUpdate={processRowUpdate}
-      isCellEditable={isCellEditable}
+      isRowEditable={isRowEditable}
     />
 
   )
