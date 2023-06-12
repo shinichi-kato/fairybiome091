@@ -23,6 +23,8 @@
 */
 
 import React, { useCallback, useReducer, useEffect } from 'react';
+import Tooltip from '@mui/material/Tooltip';
+import { GridEditInputCell } from '@mui/x-data-grid';
 import ScriptDataGrid from './ScriptDataGrid';
 import globalChance from 'chance';
 const chanceId = globalChance();
@@ -34,6 +36,7 @@ function isRowEditable({ field, row }) {
 
 const initialState = {
   memory: [],
+  lastInsertRowId: false,
   keyMap: new Map(),
 }
 
@@ -43,18 +46,18 @@ function reducer(state, action) {
     case 'setMemory': {
       const keyMap = new Map();
       let rows = [];
-      if(Array.isArray(action.memory)){
-        rows = action.memory.map(row=>{
-          if('id' in row){
+      if (Array.isArray(action.memory)) {
+        rows = action.memory.map(row => {
+          if ('id' in row) {
             return row;
           }
           return {
             'id': randomId(),
             ...row
           }
-        })        
+        })
       } else {
-        action.memory.forEach((val,key) => {
+        action.memory.forEach((val, key) => {
           rows.push({
             id: randomId(),
             memKey: key,
@@ -64,12 +67,13 @@ function reducer(state, action) {
       }
       action.memory.forEach((val, key) => {
         keyMap.set(key, true);
-        
+
       });
 
       return {
         memory: rows,
-        keyMap: keyMap
+        keyMap: keyMap,
+        lastInsertRowId: action.lastInsertRowId || false
       }
     }
 
@@ -77,7 +81,7 @@ function reducer(state, action) {
       state.keyMap.set(action.item.memKey, true)
       return {
         memory: [...state.memory, action.item],
-        keyMap: state.keyMap
+        keyMap: state.keyMap,
       }
     }
 
@@ -98,6 +102,12 @@ export default function MemoryEditor({
       dispatch({ type: 'setMemory', memory: memory })
     }
   }, [memory]);
+
+  function handleSave(memory, lastInsertRowId) {
+    dispatch({ type: 'setMemory', memory: memory, lastInsertRowId: lastInsertRowId })
+  }
+
+
 
   const processRowUpdate = useCallback((newRow, oldRow) =>
     new Promise((resolve, reject) => {
@@ -129,8 +139,53 @@ export default function MemoryEditor({
       }
     }), [state.keyMap]);
 
+  //-----------------------------------------------------------------
+  // memKey入力 とりあえずnot NUll
+
+  const preProcessEditMemKey = (params) => {
+    console.log(params);
+    if(params.hasChanged){
+      const value = params.props.value;
+      if(value === ''){
+        return {...params.props, error: "記入して下さい"}
+      }
+      if(value[0]!=='{'){
+        return {...params.props, error: "記入例：{not_capital_string}"}
+      }
+      const length = value.length;
+      if(length>3 && value[value.length-1] === '}'){
+        if(!/^{[a-z_]+}$/.test(value)){
+          return {...params.props, error: "半角英字か_を{}で囲ったタグにして下さい"}
+        }
+        if(state.keyMap.has(value)){
+          return {...params.props, error: "同じタグがすでに存在します"}
+        }
+      }
+    }
+    return {...params.props}
+  }
+
+  function MemKeyEditInputCell(props) {
+    const { error } = props;
+    return (
+      <Tooltip open={!!error} title={error}>
+        <GridEditInputCell {...props} />
+      </Tooltip>
+    )
+  }
+
+  function renderEditMemKey(params) {
+    return <MemKeyEditInputCell {...params} />;
+  }
   const columns = [
-    { field: 'memKey', headerName: 'キー', width: 150, editable: true },
+    {
+      field: 'memKey',
+      headerName: 'キー',
+      width: 150,
+      editable: true,
+      preProcessEditCellProps: preProcessEditMemKey,
+      renderEditCell: renderEditMemKey
+    },
     { field: 'memValues', headerName: '値', width: 300, editable: true, flex: 1 },
   ];
 
@@ -145,9 +200,9 @@ export default function MemoryEditor({
       rowModel={rowModel}
       fieldToFocus="memKey"
       scriptRows={state.memory}
+      lastInsertRowId={state.lastInsertRowId}
       scriptColumns={columns}
-      handleSave={handleSaveMemory}
-      processRowUpdate={processRowUpdate}
+      handleSave={handleSave}
       isRowEditable={isRowEditable}
     />
 

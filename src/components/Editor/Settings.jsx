@@ -173,7 +173,6 @@ export default function Settings({
                 p: 1
               }}
             />
-
           </Grid>
           <Grid item xs={12}>
             <Typography variant="body2">ユーザはこのチャットボットを所有できない</Typography>
