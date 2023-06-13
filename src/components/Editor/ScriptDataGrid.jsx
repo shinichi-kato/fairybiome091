@@ -300,6 +300,9 @@ export default function ScriptDataGrid(props) {
     if (!state.appendMode) {
       // 変更前のappendModeがfalse、つまりボタン押下でappendModeになる
       addRow();
+    } else {
+      // 変更前のappendModeがtrue、つまりボタン押下でappendMode解除
+      // 
     }
 
     dispatch({ type: 'toggleAppendMode' });

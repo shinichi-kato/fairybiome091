@@ -109,52 +109,21 @@ export default function MemoryEditor({
 
 
 
-  const processRowUpdate = useCallback((newRow, oldRow) =>
-    new Promise((resolve, reject) => {
-      console.log("rowUpdate", newRow, oldRow);
-      if (newRow.memKey !== "" || newRow.memValues !== "") {
-        // 0. 追加した直後はチェックしない
-
-        if (newRow.id !== oldRow.id && state.keyMap.has(newRow.memKey)) {
-          // 1. keyの unique 制約
-          return reject(new Error("キーは重複禁止です"));
-
-        } else if (!/\{[a-zA-Z_]+\}/.test(newRow.memKey)) {
-          // 2. keyは正規表現 /\{[a-zA-Z_]+\}/ と一致していることが要求される
-          return reject(new Error("キーは半角アルファベットまたは'_'からなる文字列を{}で囲った形式にして下さい"));
-        }
-
-        else if (newRow.memValues === "") {
-          // 4. valuesには NOT NULL 制約がある。
-          return reject(new Error("値は空にしないで下さい。','で区切ると複数設定できます。"));
-        } else {
-          // dispatch({ type: 'update', newRow: newRow })
-          return resolve(newRow);
-        }
-      } else {
-        // このresolveにより内部的にapiRef.current.updateRows([newRow])が実行される
-        resolve(newRow);
-        // dispatch({ type: 'update', newRow: newRow })
-
-      }
-    }), [state.keyMap]);
-
   //-----------------------------------------------------------------
-  // memKey入力 とりあえずnot NUll
+  // memKey入力 
 
   const preProcessEditMemKey = (params) => {
-    console.log(params);
     if(params.hasChanged){
       const value = params.props.value;
       if(value === ''){
-        return {...params.props, error: "記入して下さい"}
+        return {...params.props, error: "記入が必要です"}
       }
       if(value[0]!=='{'){
         return {...params.props, error: "記入例：{not_capital_string}"}
       }
       const length = value.length;
       if(length>3 && value[value.length-1] === '}'){
-        if(!/^{[a-z_]+}$/.test(value)){
+        if(!/^{[a-zA-Z_]+}$/.test(value)){
           return {...params.props, error: "半角英字か_を{}で囲ったタグにして下さい"}
         }
         if(state.keyMap.has(value)){
@@ -168,7 +137,7 @@ export default function MemoryEditor({
   function MemKeyEditInputCell(props) {
     const { error } = props;
     return (
-      <Tooltip open={!!error} title={error}>
+      <Tooltip open={!!error} title={error} arrow>
         <GridEditInputCell {...props} />
       </Tooltip>
     )
