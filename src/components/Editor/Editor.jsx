@@ -28,20 +28,35 @@ import React, { useContext, useReducer, useEffect } from 'react';
 import Container from '@mui/material/Container';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import Typography from '@mui/material/Typography';
 import { UserContext } from '../User/UserProvider';
 import { loadChatbot } from '../../useFirebase';
+import EditorBreadcrumbs from './EditorBreadcrumbs';
 import Settings from './Settings';
 import Script from './Script';
 import BotSelector from './BotSelector';
 import SaveConfirmDialog from './SaveConfirmDialog';
 import { getInitialCellState } from './initialState';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import IconButton from '@mui/material/IconButton';
+
+function getBotName(cell) {
+  console.log(cell)
+  if(cell){
+    if ('memory' in cell) {
+      let botName = "";
+      if (cell.memory.has('{BOT_NAME}')) {
+        botName = cell.memory.get('{BOT_NAME}')[0];
+      }
+      return botName;
+    }
+  }
+  return false;
+}
 
 const initialState = {
   botId: null,
+  botName: "",
   collection: null,
   page: 'settings',
   currentCell: null,
@@ -81,6 +96,7 @@ function reducer(state, action) {
       console.log(action.cells)
       return {
         botId: action.botId,
+        botName: getBotName(action.cells['main.json']),
         collection: action.collection,
         page: 'settings',
         currentCell: 'main.json',
@@ -131,18 +147,10 @@ function reducer(state, action) {
       }
     }
 
-    case 'back': {
-      if (state.currentCell !== 'main.json') {
-        return {
-          ...state,
-          currentCell: 'main.json',
-          openSaveConfirmDialog: false
-        }
-      } else {
-        return {
-          ...state,
-          openSaveConfirmDialog: true
-        }
+    case 'changePage': {
+      return {
+        ...state,
+        page: action.page
       }
     }
 
@@ -234,6 +242,10 @@ export default function Editor({ firestore }) {
     dispatch({ type: 'changeCurrentCell', currentCell: currentCell })
   }
 
+  function handleChangePage(page){
+    dispatch({type: 'changePage',page:page})
+  }
+
   function handleClickBack() {
     dispatch({ type: 'back' })
   }
@@ -259,14 +271,13 @@ export default function Editor({ firestore }) {
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
-            <IconButton
-              onClick={handleClickBack}
-            >
-              <ChevronLeftIcon color="inherit" />
+            <IconButton>
+              <NavigateBeforeIcon/>
             </IconButton>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              {state.currentCell}
-            </Typography>
+            <EditorBreadcrumbs 
+              state={state}
+              handleChangePage={handleChangePage}
+            />
           </Toolbar>
         </AppBar>
       </Box>

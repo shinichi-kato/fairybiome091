@@ -172,7 +172,22 @@ export default function ScriptDataGrid(props) {
     }
   }, [rowModel, state.rowModel, fieldToFocus, state.fieldToFocus]);
 
+  
+  // -------------------------------------------------------------------
+  // ブランク行の削除
 
+  const removeBlankRow = useCallback(()=>{
+    // 行の削除はupdateRowsで処理できるため、元データの更新はしない。
+
+    const oldRows = apiRef.current.getRowModels();
+    oldRows.forEach((row,id)=>{
+      if(isInclusive(state.rowModel, row)){
+        apiRef.current.updateRows([{ id: id, _action: 'delete' }]);
+      }
+    });
+    
+  },[apiRef, state.rowModel]);
+  
   // -------------------------------------------------------------------
   // 行の追加
 
@@ -302,12 +317,13 @@ export default function ScriptDataGrid(props) {
       addRow();
     } else {
       // 変更前のappendModeがtrue、つまりボタン押下でappendMode解除
-      // 
+      // 空行があったら削除する
+      removeBlankRow();
     }
 
     dispatch({ type: 'toggleAppendMode' });
 
-  }, [state.appendMode, addRow]);
+  }, [state.appendMode, addRow, removeBlankRow]);
 
 
   const EditToolbar = ({ toggleAddButton, handleClickSave, state }) =>

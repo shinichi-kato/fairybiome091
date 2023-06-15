@@ -241,7 +241,7 @@ export default function Settings({
         </Select>
       </Grid>
       <Grid item xs={7}>
-        <Typography>正確性(precision, 0＜x＜1)</Typography>
+        <Typography>答えの正確さ(precision, 0＜x＜1)</Typography>
         <Typography variant="caption">
           値が大きいほど辞書のキーに対して正確に一致した場合に返答をします
         </Typography>
@@ -253,7 +253,7 @@ export default function Settings({
         />
       </Grid>
       <Grid item xs={7}>
-        <Typography>継続性(retention, 0＜x＜1)</Typography>
+        <Typography>話の長さ(retention, 0＜x＜1)</Typography>
         <Typography variant="caption">
           今回返答したcellが次の返答で最優先になる確率です
         </Typography>
@@ -265,7 +265,7 @@ export default function Settings({
         />
       </Grid>
       <Grid item xs={7}>
-        <Typography>不応期(reftactory, 0以上の整数)</Typography>
+        <Typography>不在時間の長さ(reftactory, 0以上の整数)</Typography>
         <Typography variant="caption">
           チャットボット退室後に不在となる回数
         </Typography>
