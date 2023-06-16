@@ -42,7 +42,7 @@ import IconButton from '@mui/material/IconButton';
 
 function getBotName(cell) {
   console.log(cell)
-  if(cell){
+  if (cell) {
     if ('memory' in cell) {
       let botName = "";
       if (cell.memory.has('{BOT_NAME}')) {
@@ -242,19 +242,15 @@ export default function Editor({ firestore }) {
     dispatch({ type: 'changeCurrentCell', currentCell: currentCell })
   }
 
-  function handleChangePage(page){
-    dispatch({type: 'changePage',page:page})
+  function handleChangePage(page) {
+    dispatch({ type: 'changePage', page: page })
   }
 
-  function handleClickBack() {
-    dispatch({ type: 'back' })
+  function handleCloseSaveConfirmDialog() {
+    dispatch({ type: 'closeSaveConfirmDialog' })
   }
 
-  function handleCloseSaveConfirmDialog(){
-    dispatch({type: 'closeSaveConfirmDialog'})
-  }
-
-  function handleSave(){
+  function handleSave() {
     // クラウドへ保存
   }
 
@@ -272,12 +268,17 @@ export default function Editor({ firestore }) {
         <AppBar position="static">
           <Toolbar>
             <IconButton>
-              <NavigateBeforeIcon/>
+              <NavigateBeforeIcon />
             </IconButton>
-            <EditorBreadcrumbs 
-              state={state}
-              handleChangePage={handleChangePage}
-            />
+            {
+              state.botId !== null &&
+              <EditorBreadcrumbs
+                state={state}
+                handleChangePage={handleChangePage}
+                handleChangeCell={handleChangeCurrentCell}
+              />
+
+            }
           </Toolbar>
         </AppBar>
       </Box>
@@ -304,7 +305,7 @@ export default function Editor({ firestore }) {
             open={state.openSaveConfirmDialog}
             handleClose={handleCloseSaveConfirmDialog}
             handleExecute={handleSave}
-          
+
           />
         }
         {

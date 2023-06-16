@@ -2,20 +2,14 @@
 import React, { useState } from 'react';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link'
-// import List from '@mui/material/List';
-// import ListItem from '@mui/material/ListItem';
-// import ListItemButton from '@mui/material/ListItemButton';
-// import ListItemIcon from '@mui/material/ListItemIcon';
-// import ListItemText from '@mui/material/ListItemText';
-// import Menu from '@mui/material/Menu';
-// import MenuItem from '@mui/material/MenuItem';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 
 import ChatbotIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import DictionaryIcon from '@mui/icons-material/DescriptionOutlined';
-import { Menu, MenuItem } from '@mui/material';
 
-export default function Navigation({ state, handleChangePage }) {
+export default function Navigation({ state, handleChangePage, handleChangeCell }) {
   /*
     "<"  stete.botDisplayName > state.currentCell > "辞書"|"設定"
     を表示。
@@ -28,22 +22,47 @@ export default function Navigation({ state, handleChangePage }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
 
-  function handleClickPageMenu(event){
+  function handleClickChangePage(page){
+    setAnchorEl(null);
+    handleChangePage(page)
+  }
+  function handleClickPageMenu(event) {
     setAnchorEl(event.currentTarget);
     setMenuItems([
       <MenuItem
+      dense
         key="page0"
-        onClick={()=>handleChangePage('settings')}
-        >
-          設定
-        </MenuItem>,
-        <MenuItem
+        onClick={()=>handleClickChangePage('settings')}
+      >
+        設定
+      </MenuItem>,
+      <MenuItem
+      dense
         key="page1"
-        onClick={()=>handleChangePage('script')}
-        >
-          辞書
-        </MenuItem>
+        onClick={()=>handleClickChangePage('script')}
+      >
+        辞書
+      </MenuItem>
     ])
+  }
+
+  function handleClickChangeCell(cellName){
+    setAnchorEl(null);
+    handleChangeCell(cellName);
+  }
+
+  function handleClickCellMenu(event) {
+    setAnchorEl(event.currentTarget);
+    console.log(state);
+    const cellNames = Object.keys(state.cells);
+    setMenuItems(cellNames.map(cellName =>
+      <MenuItem
+        key={cellName}
+        dense
+        onClick={()=>handleClickChangeCell(cellName)}
+      >
+        {cellName}
+      </MenuItem>));
   }
 
   const handleClose = () => {
@@ -53,40 +72,49 @@ export default function Navigation({ state, handleChangePage }) {
   const currentPage =
     state.page === 'settings' ? '設定' :
       state.page === 'script' ? '辞書' : '';
-  
+
   const open = Boolean(anchorEl);
 
   return (
-    <Breadcrumbs aria-label="breadcrubms">
-      <Link
-        underline="none"
-        sx={{ display: 'flex', alignItems: 'center' }}
-        color="inherit"
-      >
-        <ChatbotIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-        {state.botName}
-      </Link>
-      <Link
-        underline="none"
-        sx={{ display: 'flex', alignItems: 'center' }}
-        color="inherit"
-      >
-        <SettingsIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-        {state.currentCell}
-      </Link>
-      <Link
-        underline="none"
-        sx={{ display: 'flex', alignItems: 'center' }}
-        color="inherit"
-        id="page-button"
-        aria-haspopup="listbox"
-        aria-controls="page-menu"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={handleClickPageMenu}
-      >
-        <DictionaryIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-        {currentPage}
-      </Link>
+    <>
+      <Breadcrumbs aria-label="breadcrubms">
+        <Link
+          href="#"
+          sx={{ display: 'flex', alignItems: 'center' }}
+          color="inherit"
+        >
+          <ChatbotIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+          {state.botName}
+        </Link>
+        <Link
+          href="#"
+          sx={{ display: 'flex', alignItems: 'center' }}
+          color="inherit"
+          id="page-button"
+          aria-haspopup="listbox"
+          aria-controls="page-menu"
+          aria-expanded={open ? 'true' : undefined}
+          onClick={handleClickCellMenu}
+        >
+          <SettingsIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+          {state.currentCell}
+        </Link>
+        <Link
+          href="#"
+          sx={{ display: 'flex', alignItems: 'center' }}
+          color="inherit"
+          id="page-button"
+          aria-haspopup="listbox"
+          aria-controls="page-menu"
+          aria-expanded={open ? 'true' : undefined}
+          onClick={handleClickPageMenu}
+        >
+          <DictionaryIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+          {currentPage}
+        </Link>
+
+
+      </Breadcrumbs>
       <Menu
         id="context-menu"
         anchorEl={anchorEl}
@@ -99,7 +127,6 @@ export default function Navigation({ state, handleChangePage }) {
       >
         {menuItems}
       </Menu>
-
-    </Breadcrumbs>
+    </>
   )
 }
