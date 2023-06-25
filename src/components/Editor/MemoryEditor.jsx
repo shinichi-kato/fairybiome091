@@ -1,137 +1,61 @@
 /*
   MemoryEditor
-  
-  このコンポーネントが扱う"memory"は {key:[values]} という形式で
-  格納されているMapオブジェクトで
-  1. keyには unique 制約がある。
-  2. keyは正規表現 /\{[a-zA-Z_]+\}/ と一致していることが要求される
-  3. keyが正規表現 /\{[A-Z_]+\}/ に一致するのはシステムが要求する必須の項目で、
-    キーの削除や変更は禁止
-  4. valuesには NOT NULL 制約がある。
-  
-  以上の制約をUIで実装するとともに、入力しやすいエディタとして次の機能を
-  提供する。
-  
-  * 開始時はviewモードで、既存セルをクリックするとeditモードに遷移する。
-    editモードから抜けるとviewモードに戻る。
-  * 最後にselectした行を記憶しておく。「行を追加」ボタンを押下したらappendモードに
-    遷移し、selectした行の次に行を新たに追加する。
- * appendモードをenterKeyDownで抜けたら次の行をappendする。
-  * appendモードをenterKeyDown以外で抜けたらviewモードに遷移する。
-  * 入力はrowモードで、行の編集終了時に上述の制約を満足しない場合rejectする。
-
+  DataTableを使ったMemoryEditor
 */
 
-import React, { useCallback, useReducer, useEffect } from 'react';
+import React, { useContext,useRef } from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import { GridEditInputCell } from '@mui/x-data-grid';
 import ScriptDataGrid from './ScriptDataGrid';
-import globalChance from 'chance';
-const chanceId = globalChance();
-const randomId = () => chanceId.guid();
+import { ChatbotFileContext } from './ChatbotFileProvider';
+
+const rowModel = {
+  memKey: "",
+  memValues: ""
+};
 
 function isRowEditable({ field, row }) {
   return field !== 'memKey' || !/\{[A-Z_]+\}/.test(row.memKey)
 }
 
-const initialState = {
-  memory: [],
-  lastInsertRowId: false,
-  keyMap: new Map(),
-}
 
-function reducer(state, action) {
-  console.log(`reducer MemoryEditor - ${action.type}`);
-  switch (action.type) {
-    case 'setMemory': {
-      const keyMap = new Map();
-      let rows = [];
-      if (Array.isArray(action.memory)) {
-        rows = action.memory.map(row => {
-          if ('id' in row) {
-            return row;
-          }
-          return {
-            'id': randomId(),
-            ...row
-          }
-        })
-      } else {
-        action.memory.forEach((val, key) => {
-          rows.push({
-            id: randomId(),
-            memKey: key,
-            memValues: val.join(',')
-          })
-        });
-      }
-      action.memory.forEach((val, key) => {
-        keyMap.set(key, true);
+export default function MemoryEditor() {
+  const chatbotFile = useContext(ChatbotFileContext);
+  const memory = chatbotFile.memory;
+  const keyMapRef=useRef(new Map());
 
-      });
+  // ----------------------------------------------------------------
+  // keyMapの取得と更新
 
-      return {
-        memory: rows,
-        keyMap: keyMap,
-        lastInsertRowId: action.lastInsertRowId || false
-      }
-    }
-
-    case 'append': {
-      state.keyMap.set(action.item.memKey, true)
-      return {
-        memory: [...state.memory, action.item],
-        keyMap: state.keyMap,
-      }
-    }
-
-    default:
-      throw new Error(`invalid action ${action.type}`)
+  function handleRowEditStop(params) {
+    // 追加は対応するが削除は未対応
+    const memKey = params.row.memKey;
+    keyMapRef.current.set(memKey,true);
   }
-}
-
-
-export default function MemoryEditor({
-  memory, // 配列
-  handleSaveMemory
-}) {
-  const [state, dispatch] = useReducer(reducer, initialState);
-
-  useEffect(() => {
-    if (memory) {
-      dispatch({ type: 'setMemory', memory: memory })
-    }
-  }, [memory]);
-
-  function handleSave(memory, lastInsertRowId) {
-    dispatch({ type: 'setMemory', memory: memory, lastInsertRowId: lastInsertRowId })
-  }
-
-
 
   //-----------------------------------------------------------------
   // memKey入力 
 
   const preProcessEditMemKey = (params) => {
-    if(params.hasChanged){
+    if (params.hasChanged) {
       const value = params.props.value;
-      if(value === ''){
-        return {...params.props, error: "記入が必要です"}
+      if (value === '') {
+        return { ...params.props, error: "記入が必要です" }
       }
-      if(value[0]!=='{'){
-        return {...params.props, error: "記入例：{not_capital_string}"}
+      if (value[0] !== '{') {
+        return { ...params.props, error: "記入例：{not_capital_string}" }
       }
       const length = value.length;
-      if(length>3 && value[value.length-1] === '}'){
-        if(!/^{[a-zA-Z_]+}$/.test(value)){
-          return {...params.props, error: "半角英字か_を{}で囲ったタグにして下さい"}
+      if (length > 3 && value[value.length - 1] === '}') {
+        if (!/^{[a-zA-Z_]+}$/.test(value)) {
+          return { ...params.props, error: "半角英字か_を{}で囲ったタグにして下さい" }
         }
-        if(state.keyMap.has(value)){
-          return {...params.props, error: "同じタグがすでに存在します"}
+        if (keyMapRef.current.has(value)) {
+          return { ...params.props, error: "同じタグがすでに存在します" }
         }
       }
     }
-    return {...params.props}
+    return { ...params.props }
   }
 
   function MemKeyEditInputCell(props) {
@@ -146,6 +70,7 @@ export default function MemoryEditor({
   function renderEditMemKey(params) {
     return <MemKeyEditInputCell {...params} />;
   }
+
   const columns = [
     {
       field: 'memKey',
@@ -158,23 +83,24 @@ export default function MemoryEditor({
     { field: 'memValues', headerName: '値', width: 300, editable: true, flex: 1 },
   ];
 
-  const rowModel = {
-    memKey: "",
-    memValues: ""
-  };
+  function handleSave(newRows, lastInsertRowId) {
+    memory.update(newRows, lastInsertRowId);
+  }
 
   return (
     <ScriptDataGrid
-      sx={{ height: `${52 * 8}px` }}
+      sx={{
+        height: 400,
+      }}
       rowModel={rowModel}
       fieldToFocus="memKey"
-      scriptRows={state.memory}
-      lastInsertRowId={state.lastInsertRowId}
+      scriptRows={memory.rows}
+      lastInsertRowId={memory.lastInsertRowId}
       scriptColumns={columns}
+      scriptRowEditStop={handleRowEditStop}
       handleSave={handleSave}
       isRowEditable={isRowEditable}
     />
-
   )
 
 }

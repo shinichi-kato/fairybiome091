@@ -19,7 +19,6 @@ export const getInitialCellState = (memory) => {
   }
   return ({
     description: "",
-    hasChanged: false,
     updatedAt: null,
     userDisplayName: false,
     botDisplayName: "",

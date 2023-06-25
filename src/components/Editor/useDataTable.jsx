@@ -6,14 +6,14 @@
   
 */
 
-import { useReducer } from 'react';
+import { useReducer,useCallback,useEffect } from 'react';
 import globalChance from 'chance';
 const chanceId = globalChance();
 const randomId = () => chanceId.guid();
 
 const initialState = {
   rows: [],
-  hasChanged: null,
+  changeCount: 0,
   lastInsertRowId: null,
 }
 
@@ -25,7 +25,7 @@ function reducer(state, action) {
       
       return {
         rows: rows,
-        hasChanged: state.hasChanged === null ? false : true,
+        changeCount: state.changeCount+1,
         lastInsertRowId: action.lastInsertRowId || false,
       }
     }
@@ -33,9 +33,12 @@ function reducer(state, action) {
     case 'saved': {
       return {
         ...state,
-        hasChanged: false
+        changeCount: 0
       }
     }
+
+    default:
+      throw new Error(`invalid action ${action.type}`);
   }
 }
 
@@ -44,7 +47,7 @@ export function useDataTable(rows) {
 
   useEffect(() => {
     if(rows){
-      dispatch({ type: 'setRows', rows: rows})
+      dispatch({ type: 'setRows', newRows: rows})
     }
   }, [rows]);
 
@@ -55,8 +58,14 @@ export function useDataTable(rows) {
   const saved = useCallback(()=>{
     dispatch({type:'saved'});
   },[]);
+
+  const hasChanged = useCallback(()=>{
+    return state.changeCount !== 0
+  },[state.changeCount]);
+
   return {
     ...state,
+    hasChanged: hasChanged,
     update: update,
     saved: saved
   }

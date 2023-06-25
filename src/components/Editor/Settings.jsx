@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect } from 'react';
+import React, { useContext } from 'react';
 import Grid from '@mui/material/Grid';
 import Input from '@mui/material/Input';
 import Button from '@mui/material/Button';
@@ -12,84 +12,13 @@ import BiomeLister from './BiomeLister';
 import MemoryEditor from './MemoryEditor';
 
 import { modules } from '../Biomebot-0.10/useCells';
-import { getInitialCellState } from './initialState';
+import { ChatbotFileContext } from './ChatbotFileProvider';
 
 const BOT_MODULES = Object.keys(modules);
 const ENCODERS = BOT_MODULES.filter(m => m.endsWith('Encoder')); const STATE_MACHINES = BOT_MODULES.filter(m => m.endsWith('StateMachine'));
 const DECODERS = BOT_MODULES.filter(m => m.endsWith('Decoder'))
 
-function getBotName(cell) {
-  if ('memory' in cell) {
-    let botName = "";
-    if (cell.memory.has('{BOT_NAME}')) {
-      botName = cell.memory.get('{BOT_NAME}')[0];
-      if (cell.userDisplayName && cell.userDiplayName !== "") {
-        botName += `@${cell.userDisplayName}`
-      }
-    }
-    return botName;
-  }
-  return false;
-}
-
-function reducer(state, action) {
-  console.log(`settings - ${action.type}`);
-  switch (action.type) {
-    case 'load': {
-      const cell = action.cell;
-      return {
-        ...action.cell,
-        botDisplayName: getBotName(cell),
-        script: [],
-      }
-    }
-
-    case 'changeDesc': {
-      return {
-        ...state,
-        description: action.description,
-      }
-    }
-
-    case 'changeValue': {
-      return {
-        ...state,
-        [action.key]: action.value,
-      }
-    }
-
-    case 'changeBiome': {
-      return {
-        ...state,
-        biome: [...action.biome],
-      }
-    }
-
-    case 'addNewCell': {
-      return {
-        ...state,
-        biome: [...state.biome, action.cell],
-      }
-    }
-
-    case 'changeMemory': {
-      return {
-        ...state,
-        memory: action.memory
-      }
-    }
-
-    default:
-      throw new Error(`invalid action ${action.type}`)
-  }
-}
-
-export default function Settings({
-  settings,
-  handleAddNewCell,
-  handleChangeCellName,
-  handleChangeCurrentCell
-}) {
+export default function Settings() {
   /*
     state.currentCellが編集しているセル、
     state.cellsは辞書になっており、state.cells[cellName]でスクリプトを参照できる。
@@ -102,41 +31,17 @@ export default function Settings({
     state.botId
 
   */
-  const [state, dispatch] = useReducer(reducer, getInitialCellState());
 
-  useEffect(() => {
-    if (settings.currentCell !== null) {
-      dispatch({ type: 'load', cell: settings.cells[settings.currentCell] })
-    }
-  }, [settings.botId, settings.currentCell, settings.cells]);
-
-  function handleChangeDescription(event) {
-    dispatch({ type: 'changeDesc', description: event.target.value });
-  }
-
-  function handleChangeModules(module, event) {
-    dispatch({ type: 'changeValue', key: module, value: event.target.value });
-  }
-
-  function handleChangeCoeff(coeffName, value) {
-    dispatch({ type: 'changeValue', key: coeffName, value: value })
-  }
-
-  function handleChangeCellOrder(newCells) {
-    dispatch({ type: 'changeBiome', biome: newCells })
-  }
-
-  function handleAddCell() {
-    const newCell = handleAddNewCell();
-    dispatch({ type: 'addNewCell', cell: newCell })
-  }
-
+  const chatbotFile = useContext(ChatbotFileContext);
+  const settings =chatbotFile.settings;
+  const memory = chatbotFile.memory;
+  
   function handleDeleteCurrentCell() {
-
+    
   }
 
-  function handleSaveMemory(memory) {
-    dispatch({ type: 'changeMemory', memory: memory })
+  function handleSaveMemory(rows) {
+    memory.update(rows)
   }
 
 
@@ -151,20 +56,20 @@ export default function Settings({
           <Grid item xs={12}>
             <FairyPanel bot={{
               isReady: true,
-              avatarURL: `${state.avatarDir}peace.svg`,
-              backgroundColor: state.backgroundColor,
+              avatarURL: `${settings.avatarDir}peace.svg`,
+              backgroundColor: settings.backgroundColor,
             }} />
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h5">
-              {state.botDisplayName}
+              {settings.botDisplayName}
             </Typography>
           </Grid>
           <Grid item xs={12}>
             <Input
               placeholder="チャットボットの説明"
-              value={state.description}
-              onChange={handleChangeDescription}
+              value={settings.description}
+              onChange={settings.changeDescription}
               maxRows={3}
               multiline
               fullWidth
@@ -184,7 +89,7 @@ export default function Settings({
         更新日
       </Grid>
       <Grid item xs={5}>
-        <Typography align="right">{state.updatedAt}</Typography>
+        <Typography align="right">{settings.updatedAt}</Typography>
       </Grid>
       <Grid item xs={7}>
         <Typography>
@@ -196,8 +101,8 @@ export default function Settings({
       </Grid>
       <Grid item xs={5}>
         <Select
-          value={state.encoder}
-          onChange={e => handleChangeModules('encoder', e)}
+          value={settings.encoder}
+          onChange={e => settings.changeModule('encoder', e)}
         >
           {ENCODERS.map(m =>
             <MenuItem value={m} key={m}>{m}</MenuItem>
@@ -214,8 +119,8 @@ export default function Settings({
       </Grid>
       <Grid item xs={5}>
         <Select
-          value={state.stateMachine}
-          onChange={e => handleChangeModules('stateMachine', e)}
+          value={settings.stateMachine}
+          onChange={e => settings.changeModule('stateMachine', e)}
         >
           {STATE_MACHINES.map(m =>
             <MenuItem value={m} key={m}>{m}</MenuItem>
@@ -232,8 +137,8 @@ export default function Settings({
       </Grid>
       <Grid item xs={5}>
         <Select
-          value={state.decoder}
-          onChange={e => handleChangeModules('decoder', e)}
+          value={settings.decoder}
+          onChange={e => settings.changeModule('decoder', e)}
         >
           {DECODERS.map(m =>
             <MenuItem value={m} key={m}>{m}</MenuItem>
@@ -248,8 +153,8 @@ export default function Settings({
       </Grid>
       <Grid item xs={5}>
         <CoeffInput
-          value={state.precision}
-          handleChangeValue={v => handleChangeCoeff('precision', v)}
+          value={settings.precision}
+          handleChangeValue={v => settings.changeCoeff('precision', v)}
         />
       </Grid>
       <Grid item xs={7}>
@@ -260,8 +165,8 @@ export default function Settings({
       </Grid>
       <Grid item xs={5}>
         <CoeffInput
-          value={state.retention}
-          handleChangeValue={v => handleChangeCoeff('retention', v)}
+          value={settings.retention}
+          handleChangeValue={v => settings.changeCoeff('retention', v)}
         />
       </Grid>
       <Grid item xs={7}>
@@ -272,8 +177,8 @@ export default function Settings({
       </Grid>
       <Grid item xs={5}>
         <NonNegInput
-          value={state.retention}
-          handleChangeValue={v => handleChangeCoeff('refractory', v)}
+          value={settings.retention}
+          handleChangeValue={v => settings.changeCoeff('refractory', v)}
         />
       </Grid>
       <Grid item xs={12}>
@@ -284,13 +189,13 @@ export default function Settings({
           settings.currentCell === 'main.json' ?
             <>
               <BiomeLister
-                cells={state.biome}
-                handleChangeCellOrder={handleChangeCellOrder}
-                handleChangeCellName={handleChangeCellName}
-                handleChangeCurrentCell={handleChangeCurrentCell}
+                cells={settings.biome}
+                handleChangeCellOrder={settings.changeCellOrder}
+                handleChangeCellName={chatbotFile.changeCellName}
+                handleChangeCurrentCell={chatbotFile.requestChangeCurrentCellName}
               />
               <Button
-                onClick={handleAddCell}
+                onClick={chatbotFile.addNewCell}
               >セルの追加</Button>
             </>
             :
@@ -308,7 +213,7 @@ export default function Settings({
       </Grid>
       <Grid item xs={12}>
         <MemoryEditor
-          memory={state.memory}
+          memory={memory}
           handleSaveMemory={handleSaveMemory}
         />
       </Grid>

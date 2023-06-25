@@ -33,7 +33,7 @@ async function getBotCollection(firestore, collName, bots) {
   })
 }
 
-export default function BotSelector({ firestore, state, handleChangeBot }) {
+export default function BotSelector({ firestore, botId, collection, handleChangeBot }) {
   const [bots, setBots] = useState([]);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function BotSelector({ firestore, state, handleChangeBot }) {
             <ImageListItem key={bot.id}
               onClick={() => { handleChangeBot(bot.id, bot.collection) }}
               sx={{
-                border: bot.id === state.botId ? "4px solid" : "none",
+                border: (bot.id === botId && bot.collection === collection) ? "4px solid" : "none",
                 borderColor: 'primary.main'
               }}
             >

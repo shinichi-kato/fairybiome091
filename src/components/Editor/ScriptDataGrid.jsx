@@ -153,7 +153,7 @@ export default function ScriptDataGrid(props) {
   // 以下のpropsを与えること
   const {
     rowModel, fieldToFocus, scriptRows, scriptColumns,
-    handleSave, isRowEditable, lastInsertRowId
+    handleSave, isRowEditable, lastInsertRowId,scriptRowEditStop
   } = props;
 
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -267,6 +267,8 @@ export default function ScriptDataGrid(props) {
     } else {
       dispatch({ type: 'setAppendMode', appendMode: false })
     }
+
+    scriptRowEditStop && scriptRowEditStop(params);
   }
 
   // -------------------------------------------------------------------
