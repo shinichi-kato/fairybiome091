@@ -16,13 +16,15 @@ adminはすべてのデータを編集でき、チャットボット選択画面
 
 */
 
-import React, { useReducer, createContext, useEffect, useCallback } from 'react';
-import { useChatbotFile } from './useChatbotFile';
+import React, { useReducer, createContext, useCallback } from 'react';
 import { useSettings } from './useSettings';
 import { useDataTable } from './useDataTable';
 
 import BotSelector from './BotSelector';
 import SaveConfirmDialog from './SaveConfirmDialog';
+import { loadChatbot } from '../../useFirebase';
+import { getInitialCellState } from './initialState';
+
 import globalChance from 'chance';
 const chanceId = globalChance();
 const randomId = () => chanceId.guid();
@@ -33,19 +35,22 @@ function getBotName(cell) {
   console.log(cell)
   if (cell) {
     if ('memory' in cell) {
-      let botName = "";
-      if (cell.memory.has('{BOT_NAME}')) {
-        botName = cell.memory.get('{BOT_NAME}')[0];
+      for(let item of cell['memory']){
+        if(item.memKey==="{BOT_NAME}"){
+          return item.memValues.split(',')[0]
+        }
       }
-      return botName;
     }
   }
   return false;
 }
 
 function memory2rows(mem) {
-  if (mem) {
-    let rows = [];
+  let rows = [];
+  if (Array.isArray(mem)) {
+    rows = mem.map(row => ('id' in row ? row : { 'id': randomId(), ...row }));
+  }
+  else if (mem instanceof Map) {
     mem.forEach((val, key) => {
       rows.push({
         id: randomId(),
@@ -69,31 +74,43 @@ const initialState = {
     target: false,
     value: null,
   },
+  cells: null,
+  changeCount: 0,
+  currentCell: null,
   currentCellName: false,
-  currentPage: false, // settings || script || false
+  currentPage: false, // settings || script 
 }
 
 function reducer(state, action) {
-  console.log(`ChatbotFiletProvider - ${action.type}`);
+  console.log(`ChatbotFileProvider - ${action.type}`);
   switch (action.type) {
     case 'load': {
+      let cells = {};
+      Object.keys(action.cells).forEach(key => {
+        let cellValue = action.cells[key];
+        if ('memory' in cellValue) {
+          cells[key] = {
+            ...cellValue,
+            memory: memory2rows(cellValue.memory)
+          };
+        } else {
+          cells[key] = cellValue;
+        }
+      });
+      const currentCell = cells['main.json'];
+      const botName = getBotName(currentCell);
+
       return {
         botId: action.botId,
-        botName: false,
+        botName: botName,
         collection: action.collection,
         saveRequest: {
           target: false,
           value: null,
         },
-        currentCellName: 'main.json',
-        currentPage: 'settings'
-      }
-    }
-
-    case 'setBotName': {
-      return {
-        ...state,
-        botName: action.botName,
+        cells: cells,
+        changeCount: 0,
+        currentCell: currentCell,
         currentCellName: 'main.json',
         currentPage: 'settings'
       }
@@ -102,7 +119,10 @@ function reducer(state, action) {
     case 'requestChangeChatbot': {
       return {
         ...state,
-
+        saveRequest: {
+          target: 'botId',
+          value: false,
+        }
       }
 
     }
@@ -180,6 +200,88 @@ function reducer(state, action) {
       }
     }
 
+    case 'addNewCell': {
+      const mainJson = state.cells['main.json'];
+
+      // 新しいセルの仮名を生成
+      const cellNames = Object.keys(state.cells);
+      const usedNumbers = cellNames.map(c => {
+        let g = c.match(/^セル([0-9]+)$/);
+        if (g && g.length === 2) {
+          return parseInt(g[1])
+        }
+        else {
+          return -1;
+        }
+      });
+      const newCellName = `セル${Math.max(...usedNumbers) + 1}`;
+
+      return {
+        ...state,
+        cells: {
+          ...state.cells,
+          'main.json': {
+            ...mainJson,
+            biome: [
+              ...mainJson.biome,
+              newCellName
+            ]
+          },
+          [newCellName]: {
+            ...getInitialCellState(),
+          }
+        },
+        changeCount: state.changeCount + 1
+      }
+    }
+
+    case 'changeCellName': {
+      let newCells = {};
+      let oldCellNames = Object.keys(state.cells);
+      oldCellNames.forEach(cellName => {
+        if (cellName === action.oldName) {
+          newCells[action.newCell] = state.cells[action.oldCell]
+        } else {
+          newCells[cellName] = state.cells[cellName]
+        }
+      });
+
+      return {
+        ...state,
+        cells: newCells,
+        changeCount: state.changeCount + 1
+      }
+
+    }
+
+    case 'updateCell': {
+      return {
+        ...state,
+        cells: {
+          ...state.cells,
+          [action.cellName]: action.cell
+        },
+        changeCount: state.changeCount + 1
+      }
+    }
+
+    case 'deleteCell': {
+      let cells = { ...state.cells };
+      delete cells[action.cellName];
+
+      return {
+        ...state,
+        cells: cells,
+        changeCount: state.changeCount + 1
+      }
+    }
+    case 'saved': {
+      return {
+        ...state,
+        changeCount: 0
+      }
+    }
+
     default:
       throw new Error(`invalid action ${action.type}`)
 
@@ -188,37 +290,23 @@ function reducer(state, action) {
 
 export default function ChatbotFileProvider({ firestore, children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const chatbotFile = useChatbotFile(firestore, state.botId, state.collection);
-  const currentCell =
-    state && state.currentCellName &&
-    chatbotFile && chatbotFile.cells &&
-    chatbotFile.cells[state.currentCellName];
+  const settings = useSettings(state.currentCell);
+  const memory = useDataTable(state.currentCell && state.currentCell.memory);
+  // const script = useDataTable(state.currentCell && state.currentCell.script);
+  // const settings = useSettings();
+  const script = useDataTable();
 
-  const settings = useSettings(currentCell);
-  const memory = useDataTable(currentCell && memory2rows(currentCell.memory));
-  const script = useDataTable(currentCell && currentCell.script);
-  // const user = useContext(UserContext);
-
-
-  //---------------------------------------------------------------
-  // botのダウンロード
-
-  useEffect(() => {
-    if (currentCell) {
-      dispatch({ type: 'setBotName', botName: getBotName(currentCell) })
-    }
-  }, [currentCell]);
 
   // -----------------------------------------------------------------------
   // cellの編集
 
   const addNewCell = useCallback(() => {
-    chatbotFile.addNewCell();
-  }, [chatbotFile]);
+    dispatch({ type: 'addNewCell' });
+  }, []);
 
   const changeCellName = useCallback((oldName, newName) => {
-    chatbotFile.changeCellName(oldName, newName);
-  }, [chatbotFile]);
+    dispatch({ type: 'changeCellName', oldName: oldName, newName: newName });
+  }, [dispatch]);
 
 
   // -----------------------------------------------------------------------
@@ -228,7 +316,7 @@ export default function ChatbotFileProvider({ firestore, children }) {
     if (memory.hasChanged ||
       script.hasChanged ||
       settings.hasChanged ||
-      chatbotFile.hasChanged) {
+      state.changeCount !== 0) {
       dispatch({ type: 'requestChangeView', target: 'botId', value: null });
     } else {
       dispatch({ type: 'changeView', target: 'botId', value: null });
@@ -237,7 +325,7 @@ export default function ChatbotFileProvider({ firestore, children }) {
     memory.hasChanged,
     script.hasChanged,
     settings.hasChanged,
-    chatbotFile.hasChanged,
+    state.changeCount,
     dispatch]);
 
   const requestChangeCurrentCellName = useCallback(newCell => {
@@ -280,9 +368,13 @@ export default function ChatbotFileProvider({ firestore, children }) {
     dispatch({ type: 'applyChangeRequest' })
   }
 
-  function handleChangeBot(botId, collection) {
-    dispatch({ type: 'load', botId: botId, collection: collection });
-  }
+  const handleChangeBot = useCallback((botId, collection) => {
+    (async () => {
+      const cells = await loadChatbot(firestore, botId, collection);
+      dispatch({ type: 'load', botId: botId, collection: collection, cells: cells });
+    })();
+
+  }, [firestore, dispatch]);
 
 
   return (
@@ -294,10 +386,10 @@ export default function ChatbotFileProvider({ firestore, children }) {
         requestChangeCurrentCellName: requestChangeCurrentCellName,
         requestChangeCurrentPage: requestChangeCurrentPage,
         botId: state.botId,
-
-        currentCellName: state.chrrentCellName,
+        botName: state.botName,
+        currentCellName: state.currentCellName,
         currentPage: state.currentPage,
-        cells: chatbotFile,
+        cells: state.cells,
         settings: settings,
         memory: memory,
         script: script,
@@ -315,7 +407,7 @@ export default function ChatbotFileProvider({ firestore, children }) {
       }
       <SaveConfirmDialog
         botName={state.botName}
-        open={state.saveRequest.target !== false}
+        open={Boolean(state.saveRequest.target)}
         handleClose={handleClose}
         handleDispose={handleDispose}
         handleSave={handleSave}

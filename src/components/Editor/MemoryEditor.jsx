@@ -62,7 +62,7 @@ export default function MemoryEditor() {
     const { error } = props;
     return (
       <Tooltip open={!!error} title={error} arrow>
-        <GridEditInputCell {...props} />
+        <span><GridEditInputCell {...props} /></span>
       </Tooltip>
     )
   }

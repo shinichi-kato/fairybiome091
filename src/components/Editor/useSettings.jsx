@@ -1,16 +1,6 @@
 import { useReducer, useEffect, useCallback } from 'react';
-import { getInitialCellState } from '../Editor0/initialState';
+import { getInitialCellState } from '../Editor/initialState';
 
-function getBotName(cell) {
-  if ('memory' in cell) {
-    let botName = "";
-    if (cell.memory.has('{BOT_NAME}')) {
-      botName = cell.memory.get('{BOT_NAME}')[0];
-    }
-    return botName;
-  }
-  return false;
-}
 
 const initialState = {
   cell: getInitialCellState(),
@@ -25,7 +15,6 @@ function reducer(state, action) {
       return {
         cell: {
           ...cell,
-          botDisplayName: getBotName(cell),
           script: []
         },
         changeCount: 0
@@ -75,7 +64,7 @@ function reducer(state, action) {
    case 'saved': {
       return {
         ...state,
-        changeCount: state.changeCount + 1
+        changeCount: 0
       }
     }
 
@@ -93,9 +82,9 @@ export function useSettings(cell) {
 
   useEffect(() => {
     if (cell) {
-      dispatch({ type: 'load', cell: cell, hasChanged: hasChanged});
+      dispatch({ type: 'load', cell: cell});
     }
-  }, [cell,hasChanged]);
+  }, [cell]);
 
   const changeDescription = useCallback((desc) => {
     dispatch({ type: 'changeDesc', description: desc });

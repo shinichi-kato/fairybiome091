@@ -1,5 +1,5 @@
 
-import React, {useState} from 'react';
+import React, { useState,useContext } from 'react';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link'
 import Menu from '@mui/material/Menu';
@@ -8,15 +8,14 @@ import MenuItem from '@mui/material/MenuItem';
 import ChatbotIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import DictionaryIcon from '@mui/icons-material/DescriptionOutlined';
+import { ChatbotFileContext } from './ChatbotFileProvider';
 
 const pages = {
-  '設定': 'settings',
-  '辞書': 'script'
+  'settings':'設定',
+  'script': '辞書'
 };
 
-export default function EditorBreadcrumbs({
-  chatbotFile
-}) {
+export default function EditorBreadcrumbs() {
   /*
     stete.botDisplayName > state.currentCell > "辞書"|"設定"
     を表示。
@@ -25,13 +24,14 @@ export default function EditorBreadcrumbs({
     "辞書"をクリックしたら辞書か設定か選ぶドロップリストを表示。選択したら各表示
   */
 
+  const chatbotFile = useContext(ChatbotFileContext);
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
-  const {
-    botName,currentPage,currentCellName,cells,
-    requestChangeChatbot, requestChangeCurrentCellName, requestChangeCurrentPage
-    } = chatbotFile;
 
+  function handleClickMenuPage(page){
+    setAnchorEl(null);
+    chatbotFile.requestChangeCurrentPage(page)
+  }
   
   function handleOpenPageMenu(event) {
     setAnchorEl(event.currentTarget);
@@ -39,21 +39,26 @@ export default function EditorBreadcrumbs({
       <MenuItem
         dense
         key={page}
-        onClick={() => requestChangeCurrentPage(page)}
+        onClick={() => handleClickMenuPage(page)}
       >
         {pages[page]}
       </MenuItem>
     ))
   }
 
-  function handleOpenCellMenu(event){
+  function handleClickMenuCell(cellName){
+    setAnchorEl(null);
+    chatbotFile.requestChangeCurrentCellName(cellName);
+  }
+
+  function handleOpenCellMenu(event) {
     setAnchorEl(event.currentTarget);
-    const cellNames = Object.keys(cells);
+    const cellNames = Object.keys(chatbotFile.cells);
     setMenuItems(cellNames.map(cellName =>
       <MenuItem
         key={cellName}
         dense
-        onClick={()=>requestChangeCurrentCellName(cellName)}
+        onClick={() => handleClickMenuCell(cellName)}
       >
         {cellName}
       </MenuItem>));
@@ -64,7 +69,6 @@ export default function EditorBreadcrumbs({
   };
 
   const open = Boolean(anchorEl);
-
   return (
     <>
       <Breadcrumbs aria-label="breadcrubms">
@@ -72,10 +76,10 @@ export default function EditorBreadcrumbs({
           href="#"
           sx={{ display: 'flex', alignItems: 'center' }}
           color="inherit"
-          onClick={requestChangeChatbot}
+          onClick={chatbotFile.requestChangeChatbot}
         >
           <ChatbotIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-          {botName}
+          {chatbotFile.botName}
         </Link>
         <Link
           href="#"
@@ -88,7 +92,7 @@ export default function EditorBreadcrumbs({
           onClick={handleOpenCellMenu}
         >
           <SettingsIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-          {currentCellName}
+          {chatbotFile.currentCellName}
         </Link>
         <Link
           href="#"
@@ -101,7 +105,7 @@ export default function EditorBreadcrumbs({
           onClick={handleOpenPageMenu}
         >
           <DictionaryIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-          {pages[currentPage]}
+          {pages[chatbotFile.currentPage]}
         </Link>
 
 

@@ -7,12 +7,12 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
 export default function SaveConfirmDialog({
-    botName,
+    botName,open,
     handleClose,handleDispose,handleSave
   }){
   return (
     <Dialog
-      open={Boolean(botName)}
+      open={open}
       onClose={handleClose}
       aria-labelledby="save-confirm-dialog"
       aria-describedby="upload-confirmation"

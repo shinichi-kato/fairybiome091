@@ -40,7 +40,7 @@ export default function ScriptEditor() {
     const { error } = props;
     return (
       <Tooltip open={!!error} title={error} arrow>
-        <GridEditInputCell {...props} />
+       <span> <GridEditInputCell {...props} /></span>
       </Tooltip>
     )
   }
@@ -73,7 +73,6 @@ export default function ScriptEditor() {
     <ScriptDataGrid
       sx={{
         height: 'clac( 100%-140px)',
-        width: '100%'
       }}
       rowModel={rowModel}
       fieldToFocus="in"

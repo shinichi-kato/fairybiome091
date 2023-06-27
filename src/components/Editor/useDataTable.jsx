@@ -6,7 +6,7 @@
   
 */
 
-import { useReducer,useCallback,useEffect } from 'react';
+import { useReducer, useCallback, useEffect } from 'react';
 import globalChance from 'chance';
 const chanceId = globalChance();
 const randomId = () => chanceId.guid();
@@ -22,10 +22,10 @@ function reducer(state, action) {
     case 'setRows': {
       let rows = action.newRows.map(row =>
         'id' in row ? row : { 'id': randomId(), ...row });
-      
+
       return {
         rows: rows,
-        changeCount: state.changeCount+1,
+        changeCount: state.changeCount + 1,
         lastInsertRowId: action.lastInsertRowId || false,
       }
     }
@@ -46,22 +46,22 @@ export function useDataTable(rows) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    if(rows){
-      dispatch({ type: 'setRows', newRows: rows})
+    if (rows) {
+      dispatch({ type: 'setRows', newRows: rows })
     }
   }, [rows]);
 
-  const update = useCallback((newRows, lastInsertRowId)=>{
-    dispatch({type:'setRows', newRows, lastInsertRowId});
-  },[]);
+  const update = useCallback((newRows, lastInsertRowId) => {
+    dispatch({ type: 'setRows', newRows, lastInsertRowId });
+  }, []);
 
-  const saved = useCallback(()=>{
-    dispatch({type:'saved'});
-  },[]);
+  const saved = useCallback(() => {
+    dispatch({ type: 'saved' });
+  }, []);
 
-  const hasChanged = useCallback(()=>{
+  const hasChanged = useCallback(() => {
     return state.changeCount !== 0
-  },[state.changeCount]);
+  }, [state.changeCount]);
 
   return {
     ...state,

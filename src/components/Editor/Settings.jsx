@@ -62,7 +62,7 @@ export default function Settings() {
           </Grid>
           <Grid item xs={12}>
             <Typography variant="h5">
-              {settings.botDisplayName}
+              {chatbotFile.botName}
             </Typography>
           </Grid>
           <Grid item xs={12}>
@@ -186,7 +186,7 @@ export default function Settings() {
       </Grid>
       <Grid item xs={12}>
         {
-          settings.currentCell === 'main.json' ?
+          settings.currentCellName === 'main.json' ?
             <>
               <BiomeLister
                 cells={settings.biome}
