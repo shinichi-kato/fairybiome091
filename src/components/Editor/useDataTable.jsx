@@ -13,8 +13,10 @@ const randomId = () => chanceId.guid();
 
 const initialState = {
   rows: [],
-  changeCount: 0,
+  changeCount: -1,
+  hasChanged: false,
   lastInsertRowId: null,
+  id: null
 }
 
 function reducer(state, action) {
@@ -22,11 +24,14 @@ function reducer(state, action) {
     case 'setRows': {
       let rows = action.newRows.map(row =>
         'id' in row ? row : { 'id': randomId(), ...row });
-
+      
+      let changeCount = action.id !== state.id ? 0 : state.changeCount + 1
       return {
         rows: rows,
-        changeCount: state.changeCount + 1,
+        changeCount: changeCount,
+        hasChanged: changeCount > 0,
         lastInsertRowId: action.lastInsertRowId || false,
+        id: action.id
       }
     }
 
@@ -42,14 +47,14 @@ function reducer(state, action) {
   }
 }
 
-export function useDataTable(rows) {
+export function useDataTable(id,rows) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    if (rows) {
-      dispatch({ type: 'setRows', newRows: rows })
+    if (rows && id) {
+      dispatch({ type: 'setRows', newRows: rows, id:id })
     }
-  }, [rows]);
+  }, [id,rows]);
 
   const update = useCallback((newRows, lastInsertRowId) => {
     dispatch({ type: 'setRows', newRows, lastInsertRowId });
@@ -59,13 +64,9 @@ export function useDataTable(rows) {
     dispatch({ type: 'saved' });
   }, []);
 
-  const hasChanged = useCallback(() => {
-    return state.changeCount !== 0
-  }, [state.changeCount]);
-
   return {
     ...state,
-    hasChanged: hasChanged,
+    hasChanged: state.hasChanged,
     update: update,
     saved: saved
   }

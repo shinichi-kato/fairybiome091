@@ -85,6 +85,7 @@ export default function MemoryEditor() {
 
   function handleSave(newRows, lastInsertRowId) {
     memory.update(newRows, lastInsertRowId);
+    // updateとフレッシュなsaveの区別をどうするか
   }
 
   return (

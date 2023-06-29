@@ -35,8 +35,8 @@ function getBotName(cell) {
   console.log(cell)
   if (cell) {
     if ('memory' in cell) {
-      for(let item of cell['memory']){
-        if(item.memKey==="{BOT_NAME}"){
+      for (let item of cell['memory']) {
+        if (item.memKey === "{BOT_NAME}") {
           return item.memValues.split(',')[0]
         }
       }
@@ -80,6 +80,7 @@ const initialState = {
   currentCellName: false,
   currentPage: false, // settings || script 
 }
+
 
 function reducer(state, action) {
   console.log(`ChatbotFileProvider - ${action.type}`);
@@ -138,13 +139,41 @@ function reducer(state, action) {
     }
 
     case 'changeView': {
-      return {
-        ...state,
-        saveRequest: {
-          target: false,
-          value: null,
-        },
-        [action.target]: action.value
+      switch (action.target) {
+        case 'currentCellName': {
+          return {
+            ...state,
+            saveRequest: {
+              target: false,
+              value: null,
+            },
+            currentCellName: action.value,
+            currentPage: 'settings',
+          }
+        }
+
+        case 'botId': {
+          return {
+            ...state,
+            saveRequest: {
+              target: false,
+              value: null,
+            },
+            botId: action.value,
+            currentCellName: 'main.json',
+            currentPage: 'settings',
+          }
+        }
+
+        default:
+          return {
+            ...state,
+            saveRequest: {
+              target: false,
+              value: null,
+            },
+            [action.target]: action.value
+          }
       }
     }
 
@@ -152,6 +181,7 @@ function reducer(state, action) {
       // cell切り替えの場合はcurrentPageをデフォルト状態に。
       // bot切り替えの場合はcurrentPageとcurrentCellNameをデフォルト状態に
       const target = state.saveRequest.target;
+      console.log("target", target)
       switch (target) {
         case 'currentCellName': {
           return {
@@ -291,10 +321,8 @@ function reducer(state, action) {
 export default function ChatbotFileProvider({ firestore, children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const settings = useSettings(state.currentCell);
-  const memory = useDataTable(state.currentCell && state.currentCell.memory);
-  // const script = useDataTable(state.currentCell && state.currentCell.script);
-  // const settings = useSettings();
-  const script = useDataTable();
+  const memory = useDataTable(state.botId, state.currentCell && state.currentCell.memory);
+  const script = useDataTable(state.botId, state.currentCell && state.currentCell.script);
 
 
   // -----------------------------------------------------------------------
