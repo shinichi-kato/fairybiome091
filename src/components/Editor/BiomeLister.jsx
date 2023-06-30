@@ -26,7 +26,7 @@ export default function BiomeLister({
   cells,
   handleChangeCellOrder,
   handleChangeCellName,
-  handleChangeCurrentCell
+  handleChangeCurrentCellName
 }) {
   const apiRef = useGridApiRef();
   const [openRejectedDialog, setOpenRejectedDialog] = useState(false);
@@ -74,7 +74,7 @@ export default function BiomeLister({
   function handleClickEdit(id) {
     // currentCellを切り替える
     const cell = apiRef.current.getRow(id);
-    handleChangeCurrentCell(cell.cellName);
+    handleChangeCurrentCellName(cell.cellName);
   }
 
   function handleCloseRejectedDialog() {

@@ -57,13 +57,13 @@ export default function ScriptEditor() {
     {
       field: 'intent',
       headerName: 'intent',
-      width: "20%",
+      width: 100,
       editable: true,
       preProcessEditCellProps: preProcessEditIntent,
       renderEditCell: renderEditIntent,
     },
-    { field: 'in', headerName: 'in', width: "40%", editale: true, flex: 1 },
-    { field: 'out', headerName: 'out', widht: "40%", editble: true, flex: 1 }
+    { field: 'in', headerName: 'in', flex: 1, editale: true, flex: 1 },
+    { field: 'out', headerName: 'out', flex: 1, editble: true, flex: 1 }
   ]
 
   function handleSave(newRows, lastInsertRowId) {

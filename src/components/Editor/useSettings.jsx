@@ -3,21 +3,24 @@ import { getInitialCellState } from '../Editor/initialState';
 
 
 const initialState = {
+  id: null,
   cell: getInitialCellState(),
-  changeCount: 0
+  cellName: null,
+  hasChanged: false
 };
 
 function reducer(state, action) {
   console.log(`useSettings - ${action.type}`);
   switch (action.type) {
     case 'load': {
-      const cell = action.cell;
       return {
+        id: action.id,
+        cellName: action.cellName,
         cell: {
-          ...cell,
+          ...action.cell,
           script: []
         },
-        changeCount: 0
+        hasChanged: action.id === state.id && action.cellName === state.cellName,
       }
     }
 
@@ -27,7 +30,7 @@ function reducer(state, action) {
           ...state.cell,
           description: action.description,
         },
-        changeCount: state.changeCount + 1
+        hasChanged: true,
       }
     }
 
@@ -37,7 +40,7 @@ function reducer(state, action) {
           ...state.cell,
           [action.key]: action.value,
         },
-        changeCount: state.changeCount + 1
+        hasChanged: true,
       }
     }
 
@@ -47,7 +50,7 @@ function reducer(state, action) {
           ...state.cell,
           biome: [...action.cellOrder],
         },
-        changeCount: state.changeCount + 1
+        hasChanged: true,
       }
     }
 
@@ -57,14 +60,14 @@ function reducer(state, action) {
           ...state.cell,
           biome: [...state.cell.biome, action.cell],
         },
-        changeCount: state.changeCount + 1
+        hasChanged: true
       }
     }
 
-   case 'saved': {
+    case 'saved': {
       return {
         ...state,
-        changeCount: 0
+        hasChanged: false,
       }
     }
 
@@ -73,18 +76,14 @@ function reducer(state, action) {
   }
 }
 
-export function useSettings(cell) {
+export function useSettings(botId, cellName, cell) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  
-  const hasChanged = useCallback(()=>{
-    return state.changeCount !== 0;
-  },[state.changeCount]);
 
   useEffect(() => {
     if (cell) {
-      dispatch({ type: 'load', cell: cell});
+      dispatch({ type: 'load', cell: cell, id: botId, cellName:cellName });
     }
-  }, [cell]);
+  }, [cell, botId, cellName]);
 
   const changeDescription = useCallback((desc) => {
     dispatch({ type: 'changeDesc', description: desc });
@@ -103,12 +102,12 @@ export function useSettings(cell) {
   }, []);
 
 
- return {
-  ...state.cell,
-  hasChange: hasChanged,
-  changeDescription: changeDescription,
-  changeModule: changeModule,
-  changeCoeff: changeCoeff,
-  changeCellOrder: changeCellOrder,
- }
+  return {
+    ...state.cell,
+    hasChanged: state.hasChanged,
+    changeDescription: changeDescription,
+    changeModule: changeModule,
+    changeCoeff: changeCoeff,
+    changeCellOrder: changeCellOrder,
+  }
 }

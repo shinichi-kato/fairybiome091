@@ -44,14 +44,13 @@ export default function Settings() {
     memory.update(rows)
   }
 
-
   return (
     <Grid container
       spacing={2}
       padding={1}
     >
       {
-        settings.currentCell === 'main.json' &&
+        chatbotFile.currentCellName === 'main.json' &&
         <>
           <Grid item xs={12}>
             <FairyPanel bot={{
@@ -186,13 +185,13 @@ export default function Settings() {
       </Grid>
       <Grid item xs={12}>
         {
-          settings.currentCellName === 'main.json' ?
+          chatbotFile.currentCellName === 'main.json' ?
             <>
               <BiomeLister
                 cells={settings.biome}
                 handleChangeCellOrder={settings.changeCellOrder}
                 handleChangeCellName={chatbotFile.changeCellName}
-                handleChangeCurrentCell={chatbotFile.requestChangeCurrentCellName}
+                handleChangeCurrentCellName={chatbotFile.requestChangeCurrentCellName}
               />
               <Button
                 onClick={chatbotFile.addNewCell}
@@ -218,7 +217,7 @@ export default function Settings() {
         />
       </Grid>
       {
-        settings.currentCell !== 'main.json' &&
+        chatbotFile.currentCellName !== 'main.json' &&
         <Grid item xs={12}>
           {"このセルを削除する(戻せません)"}
           <Button

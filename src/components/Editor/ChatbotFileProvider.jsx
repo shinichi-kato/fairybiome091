@@ -75,7 +75,7 @@ const initialState = {
     value: null,
   },
   cells: null,
-  changeCount: 0,
+  hasChanged: false,
   currentCell: null,
   currentCellName: false,
   currentPage: false, // settings || script 
@@ -110,7 +110,7 @@ function reducer(state, action) {
           value: null,
         },
         cells: cells,
-        changeCount: 0,
+        hasChanged: action.botId === state.botId,
         currentCell: currentCell,
         currentCellName: 'main.json',
         currentPage: 'settings'
@@ -148,6 +148,7 @@ function reducer(state, action) {
               value: null,
             },
             currentCellName: action.value,
+            currentCell:state.cells[action.value],
             currentPage: 'settings',
           }
         }
@@ -161,6 +162,7 @@ function reducer(state, action) {
             },
             botId: action.value,
             currentCellName: 'main.json',
+            currentCell: state.cells['main.json'],
             currentPage: 'settings',
           }
         }
@@ -181,7 +183,8 @@ function reducer(state, action) {
       // cell切り替えの場合はcurrentPageをデフォルト状態に。
       // bot切り替えの場合はcurrentPageとcurrentCellNameをデフォルト状態に
       const target = state.saveRequest.target;
-      console.log("target", target)
+      const value = state.saveRequest.value;
+
       switch (target) {
         case 'currentCellName': {
           return {
@@ -190,7 +193,8 @@ function reducer(state, action) {
               target: false,
               value: null,
             },
-            currentCellName: state.saveRequest.value,
+            currentCellName: value,
+            currentCell: state.cells[value],
             currentPage: 'settings',
           }
         }
@@ -202,8 +206,9 @@ function reducer(state, action) {
               target: false,
               value: null,
             },
-            botId: state.saveRequest.value,
+            botId: value,
             currentCellName: 'main.json',
+            currentCell: state.cells['main.json'],
             currentPage: 'settings',
           }
         }
@@ -215,7 +220,7 @@ function reducer(state, action) {
               target: false,
               value: null,
             },
-            [state.saveRequest.target]: state.saveRequest.value,
+            [target]: value,
           }
       }
     }
@@ -261,7 +266,7 @@ function reducer(state, action) {
             ...getInitialCellState(),
           }
         },
-        changeCount: state.changeCount + 1
+        hasChanged: true,
       }
     }
 
@@ -279,7 +284,7 @@ function reducer(state, action) {
       return {
         ...state,
         cells: newCells,
-        changeCount: state.changeCount + 1
+        hasChanged: true,
       }
 
     }
@@ -291,7 +296,7 @@ function reducer(state, action) {
           ...state.cells,
           [action.cellName]: action.cell
         },
-        changeCount: state.changeCount + 1
+        hasChanged: true,
       }
     }
 
@@ -302,13 +307,13 @@ function reducer(state, action) {
       return {
         ...state,
         cells: cells,
-        changeCount: state.changeCount + 1
+        hasChanged: true,
       }
     }
     case 'saved': {
       return {
         ...state,
-        changeCount: 0
+        hasChanged: false,
       }
     }
 
@@ -320,9 +325,9 @@ function reducer(state, action) {
 
 export default function ChatbotFileProvider({ firestore, children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const settings = useSettings(state.currentCell);
-  const memory = useDataTable(state.botId, state.currentCell && state.currentCell.memory);
-  const script = useDataTable(state.botId, state.currentCell && state.currentCell.script);
+  const settings = useSettings(state.botId, state.currentCellName, state.currentCell);
+  const memory = useDataTable(state.botId, state.currentCellName, state.currentCell && state.currentCell.memory);
+  const script = useDataTable(state.botId, state.currentCellName, state.currentCell && state.currentCell.script);
 
 
   // -----------------------------------------------------------------------
@@ -357,14 +362,15 @@ export default function ChatbotFileProvider({ firestore, children }) {
     dispatch]);
 
   const requestChangeCurrentCellName = useCallback(newCell => {
-    if (state.currentCell !== newCell) {
+    if (state.currentCellName !== newCell) {
+      console.log(memory.hasChanged,script.hasChanged,settings.hasChanged)
       if (memory.hasChanged || script.hasChanged || settings.hasChanged) {
         dispatch({ type: 'requestChangeView', target: 'currentCellName', value: newCell });
       } else {
         dispatch({ type: 'changeView', target: 'currentCellName', value: newCell });
       }
     }
-  }, [state.currentCell, memory.hasChanged, script.hasChanged, settings.hasChanged, dispatch]);
+  }, [state.currentCellName, memory.hasChanged, script.hasChanged, settings.hasChanged, dispatch]);
 
 
   const requestChangeCurrentPage = useCallback((newPage) => {
