@@ -103,8 +103,7 @@ export function useSettings(botId, cellName, cell) {
 
 
   return {
-    ...state.cell,
-    hasChanged: state.hasChanged,
+    ...state,
     changeDescription: changeDescription,
     changeModule: changeModule,
     changeCoeff: changeCoeff,

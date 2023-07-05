@@ -55,8 +55,8 @@ export default function Settings() {
           <Grid item xs={12}>
             <FairyPanel bot={{
               isReady: true,
-              avatarURL: `${settings.avatarDir}peace.svg`,
-              backgroundColor: settings.backgroundColor,
+              avatarURL: `${settings.cell.avatarDir}peace.svg`,
+              backgroundColor: settings.cell.backgroundColor,
             }} />
           </Grid>
           <Grid item xs={12}>
@@ -67,8 +67,8 @@ export default function Settings() {
           <Grid item xs={12}>
             <Input
               placeholder="チャットボットの説明"
-              value={settings.description}
-              onChange={settings.changeDescription}
+              value={settings.cell.description}
+              onChange={settings.cell.changeDescription}
               maxRows={3}
               multiline
               fullWidth
@@ -88,7 +88,7 @@ export default function Settings() {
         更新日
       </Grid>
       <Grid item xs={5}>
-        <Typography align="right">{settings.updatedAt}</Typography>
+        <Typography align="right">{settings.cell.updatedAt}</Typography>
       </Grid>
       <Grid item xs={7}>
         <Typography>
@@ -100,7 +100,7 @@ export default function Settings() {
       </Grid>
       <Grid item xs={5}>
         <Select
-          value={settings.encoder}
+          value={settings.cell.encoder}
           onChange={e => settings.changeModule('encoder', e)}
         >
           {ENCODERS.map(m =>
@@ -118,7 +118,7 @@ export default function Settings() {
       </Grid>
       <Grid item xs={5}>
         <Select
-          value={settings.stateMachine}
+          value={settings.cell.stateMachine}
           onChange={e => settings.changeModule('stateMachine', e)}
         >
           {STATE_MACHINES.map(m =>
@@ -136,7 +136,7 @@ export default function Settings() {
       </Grid>
       <Grid item xs={5}>
         <Select
-          value={settings.decoder}
+          value={settings.cell.decoder}
           onChange={e => settings.changeModule('decoder', e)}
         >
           {DECODERS.map(m =>
@@ -152,7 +152,7 @@ export default function Settings() {
       </Grid>
       <Grid item xs={5}>
         <CoeffInput
-          value={settings.precision}
+          value={settings.cell.precision}
           handleChangeValue={v => settings.changeCoeff('precision', v)}
         />
       </Grid>
@@ -164,7 +164,7 @@ export default function Settings() {
       </Grid>
       <Grid item xs={5}>
         <CoeffInput
-          value={settings.retention}
+          value={settings.cell.retention}
           handleChangeValue={v => settings.changeCoeff('retention', v)}
         />
       </Grid>
@@ -176,7 +176,7 @@ export default function Settings() {
       </Grid>
       <Grid item xs={5}>
         <NonNegInput
-          value={settings.retention}
+          value={settings.cell.refractory}
           handleChangeValue={v => settings.changeCoeff('refractory', v)}
         />
       </Grid>
@@ -188,7 +188,7 @@ export default function Settings() {
           chatbotFile.currentCellName === 'main.json' ?
             <>
               <BiomeLister
-                cells={settings.biome}
+                cells={settings.cell.biome}
                 handleChangeCellOrder={settings.changeCellOrder}
                 handleChangeCellName={chatbotFile.changeCellName}
                 handleChangeCurrentCellName={chatbotFile.requestChangeCurrentCellName}

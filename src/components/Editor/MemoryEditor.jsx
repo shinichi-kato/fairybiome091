@@ -35,6 +35,8 @@ export default function MemoryEditor() {
 
   //-----------------------------------------------------------------
   // memKey入力 
+  // memKeyは空文字ではならず、{not_capital_string}のような形式であり
+  // 重複は禁止
 
   const preProcessEditMemKey = (params) => {
     if (params.hasChanged) {

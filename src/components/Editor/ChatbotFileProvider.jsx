@@ -22,7 +22,7 @@ import { useDataTable } from './useDataTable';
 
 import BotSelector from './BotSelector';
 import SaveConfirmDialog from './SaveConfirmDialog';
-import { loadChatbot } from '../../useFirebase';
+import { loadChatbot, saveChatbot } from '../../useFirebase';
 import { getInitialCellState } from './initialState';
 
 import globalChance from 'chance';
@@ -63,6 +63,21 @@ function memory2rows(mem) {
   return null;
 }
 
+function script2rows(scr) {
+  let rows = scr.map(row => {
+    if ('id' in row) {
+      return row;
+    } else {
+      return {
+        'id': randomId(),
+        'in': row.in.join(','), 'out': row.out.join(','),
+        'intent': 'intent' in row ? row.intent : ""
+      }
+    }
+  });
+  return rows;
+}
+
 //-----------------------------------------------
 // チャットボットデータ全体のstate 
 //
@@ -92,7 +107,8 @@ function reducer(state, action) {
         if ('memory' in cellValue) {
           cells[key] = {
             ...cellValue,
-            memory: memory2rows(cellValue.memory)
+            memory: memory2rows(cellValue.memory),
+            script: script2rows(cellValue.script)
           };
         } else {
           cells[key] = cellValue;
@@ -148,7 +164,7 @@ function reducer(state, action) {
               value: null,
             },
             currentCellName: action.value,
-            currentCell:state.cells[action.value],
+            currentCell: state.cells[action.value],
             currentPage: 'settings',
           }
         }
@@ -310,9 +326,10 @@ function reducer(state, action) {
         hasChanged: true,
       }
     }
-    case 'saved': {
+    case 'update': {
       return {
         ...state,
+        cells: action.newCells,
         hasChanged: false,
       }
     }
@@ -346,10 +363,7 @@ export default function ChatbotFileProvider({ firestore, children }) {
   // 変更があったらuploadするか確認してページ遷移
 
   const requestChangeChatbot = useCallback(() => {
-    if (memory.hasChanged ||
-      script.hasChanged ||
-      settings.hasChanged ||
-      state.changeCount !== 0) {
+    if (memory.hasChanged || script.hasChanged || settings.hasChanged || state.hasChanged) {
       dispatch({ type: 'requestChangeView', target: 'botId', value: null });
     } else {
       dispatch({ type: 'changeView', target: 'botId', value: null });
@@ -358,12 +372,11 @@ export default function ChatbotFileProvider({ firestore, children }) {
     memory.hasChanged,
     script.hasChanged,
     settings.hasChanged,
-    state.changeCount,
+    state.hasChanged,
     dispatch]);
 
   const requestChangeCurrentCellName = useCallback(newCell => {
     if (state.currentCellName !== newCell) {
-      console.log(memory.hasChanged,script.hasChanged,settings.hasChanged)
       if (memory.hasChanged || script.hasChanged || settings.hasChanged) {
         dispatch({ type: 'requestChangeView', target: 'currentCellName', value: newCell });
       } else {
@@ -384,7 +397,55 @@ export default function ChatbotFileProvider({ firestore, children }) {
   }, [state.currentPage, memory.hasChanged, script.hasChanged, dispatch]);
 
 
+  const handleSave = useCallback(() => {
+    // settings,scirpt,memoryに格納された最新情報をcellsに反映し
+    // firestoreにアップロード
+    let biome = {};
+    let main = {};
 
+    state.cells.forEach(cellName => {
+      if (cellName === 'main.json') {
+        if (settings.id === state.botId && settings.cellName === cellName) {
+          main = { ...settings.cell }
+        } else {
+          main = { ...state.cells }
+        }
+
+        if (memory.id === state.botId && memory.cellName === cellName) {
+          main.memory = memory.rows
+        }
+
+        if (script.id === state.botId && script.cellName === cellName) {
+          main.script = script.rows
+        }
+      } else {
+        if (settings.id === state.botId && settings.cellName === cellName) {
+          biome[cellName] = { ...settings.cell }
+        } else {
+          biome[cellName] = { ...state.cells }
+        }
+
+        if (memory.id === state.botId && memory.cellName === cellName) {
+          biome[cellName].memory = memory.rows
+        }
+
+        if (script.id === state.botId && script.cellName === cellName) {
+          biome[cellName].script = script.rows
+        }
+
+      }
+    });
+    saveChatbot(firestore, state.botId, state.collection, main, biome);
+    dispatch({
+      type: 'update', newCells: {
+        'main.json': main,
+        ...biome
+      }
+    });
+  }, [
+    script, memory, settings, state.botId, state.collection, state.cells,
+    firestore,
+  ]);
 
 
   function handleClose() {
@@ -397,10 +458,6 @@ export default function ChatbotFileProvider({ firestore, children }) {
     dispatch({ type: 'applyChangeRequest' })
   }
 
-  function handleSave() {
-    // ここでfirestoreに保存
-    dispatch({ type: 'applyChangeRequest' })
-  }
 
   const handleChangeBot = useCallback((botId, collection) => {
     (async () => {

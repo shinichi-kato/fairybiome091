@@ -24,7 +24,8 @@ export default function ScriptEditor() {
   }
 
   //-----------------------------------------------------------------
-  // memKey入力 
+  // intent入力 
+  // intentはなくてもよいが、空文字列でない場合は重複してはいけない
 
   const preProcessEditIntent = (params) => {
     if (params.hasChanged) {
@@ -62,8 +63,8 @@ export default function ScriptEditor() {
       preProcessEditCellProps: preProcessEditIntent,
       renderEditCell: renderEditIntent,
     },
-    { field: 'in', headerName: 'in', flex: 1, editale: true, flex: 1 },
-    { field: 'out', headerName: 'out', flex: 1, editble: true, flex: 1 }
+    { field: 'in', headerName: 'in', flex: 1, editale: true},
+    { field: 'out', headerName: 'out', flex: 1, editble: true}
   ]
 
   function handleSave(newRows, lastInsertRowId) {
@@ -72,7 +73,7 @@ export default function ScriptEditor() {
   return (
     <ScriptDataGrid
       sx={{
-        height: 'clac( 100%-140px)',
+        height: 800,
       }}
       rowModel={rowModel}
       fieldToFocus="in"

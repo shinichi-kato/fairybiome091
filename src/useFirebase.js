@@ -94,6 +94,18 @@ export async function loadChatbot(firestore, id, collection) {
   return sourceCells;
 }
 
+export async function saveChatbot(firestore, id, collection, main,biome){
+  const batch =writeBatch(firestore);
+
+  const mainRef = doc(firestore, collection,id);
+  batch.set(mainRef, main);
+  for (let cellName of main.biome) {
+    let cellRef = doc(firestore, collection, id, "biome", cellName);
+    batch.set(cellRef, biome[cellName]);
+  }
+
+}
+
 export async function uploadOrigin(firestore, name, main, biome) {
   /*
     name: チャットボットのディレクトリ名
@@ -162,6 +174,7 @@ export async function download(firestore, id, collection) {
     'main.json': source,
     ...sourceCells
   }
+
 }
 
 
