@@ -68,7 +68,7 @@ export default function Settings() {
             <Input
               placeholder="チャットボットの説明"
               value={settings.cell.description}
-              onChange={settings.cell.changeDescription}
+              onChange={e=>settings.changeDescription(e.target.value)}
               maxRows={3}
               multiline
               fullWidth

@@ -7,6 +7,7 @@ export default function useFirebase() {
   const [firestore, setFirestore] = useState(null);
 
   useEffect(() => {
+    console.log("useFirebase")
     let fb;
     if (getApps().length === 0) {
       fb = initializeApp({
@@ -73,7 +74,7 @@ export async function loadChatbot(firestore, id, collection) {
     let data = sourceSnap.data();
     sourceCells['main.json'] = {
       ...data,
-      memory: new Map(data.memory ? Object.entries(data.memory): [])
+      memory: new Map(data.memory ? Object.entries(data.memory) : [])
     }
 
     source = sourceCells['main.json'];
@@ -84,7 +85,7 @@ export async function loadChatbot(firestore, id, collection) {
       let data = cellSnap.data();
       sourceCells[cellName] = {
         ...data,
-        memory: new Map(data.memory ? Object.entries(data.memory): [])
+        memory: new Map(data.memory ? Object.entries(data.memory) : [])
       };
     }
   } else {
@@ -94,10 +95,10 @@ export async function loadChatbot(firestore, id, collection) {
   return sourceCells;
 }
 
-export async function saveChatbot(firestore, id, collection, main,biome){
-  const batch =writeBatch(firestore);
+export function saveChatbot(firestore, id, collection, main, biome) {
+  const batch = writeBatch(firestore);
 
-  const mainRef = doc(firestore, collection,id);
+  const mainRef = doc(firestore, collection, id);
   batch.set(mainRef, main);
   for (let cellName of main.biome) {
     let cellRef = doc(firestore, collection, id, "biome", cellName);

@@ -402,8 +402,8 @@ export default function ChatbotFileProvider({ firestore, children }) {
     // firestoreにアップロード
     let biome = {};
     let main = {};
-
-    state.cells.forEach(cellName => {
+    console.log(state.cells)
+    Object.keys(state.cells).forEach(cellName => {
       if (cellName === 'main.json') {
         if (settings.id === state.botId && settings.cellName === cellName) {
           main = { ...settings.cell }
@@ -442,6 +442,9 @@ export default function ChatbotFileProvider({ firestore, children }) {
         ...biome
       }
     });
+    settings.saved();
+    memory.saved();
+    script.saved();
   }, [
     script, memory, settings, state.botId, state.collection, state.cells,
     firestore,

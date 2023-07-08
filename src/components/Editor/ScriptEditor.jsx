@@ -63,8 +63,8 @@ export default function ScriptEditor() {
       preProcessEditCellProps: preProcessEditIntent,
       renderEditCell: renderEditIntent,
     },
-    { field: 'in', headerName: 'in', flex: 1, editale: true},
-    { field: 'out', headerName: 'out', flex: 1, editble: true}
+    { field: 'in', headerName: 'in', flex: 1, editable: true},
+    { field: 'out', headerName: 'out', flex: 1, editable: true}
   ]
 
   function handleSave(newRows, lastInsertRowId) {

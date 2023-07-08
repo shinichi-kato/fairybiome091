@@ -101,6 +101,10 @@ export function useSettings(botId, cellName, cell) {
     dispatch({ type: 'changeCellOrder', cellOrder: cellOrder })
   }, []);
 
+  const saved = useCallback(()=>{
+    dispatch({type: 'saved'});
+  },[]);
+
 
   return {
     ...state,
@@ -108,5 +112,6 @@ export function useSettings(botId, cellName, cell) {
     changeModule: changeModule,
     changeCoeff: changeCoeff,
     changeCellOrder: changeCellOrder,
+    saved:saved
   }
 }
