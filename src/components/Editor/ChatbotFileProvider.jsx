@@ -46,6 +46,10 @@ function getBotName(cell) {
 }
 
 function memory2rows(mem) {
+  if(mem === null){
+    return null;
+  }
+
   let rows = [];
   if (Array.isArray(mem)) {
     rows = mem.map(row => ('id' in row ? row : { 'id': randomId(), ...row }));
@@ -59,8 +63,26 @@ function memory2rows(mem) {
       })
     });
     return rows;
+  } else if (typeof mem === 'object'){
+    // bare objectの場合
+    Object.keys(mem).forEach(memKey=>{
+      rows.push({
+        id:randomId(),
+        memKey: memKey, 
+        memValues: mem[memKey].join(',')
+      })
+    });
   }
-  return null;
+  return rows;
+}
+
+function rows2memory(rows) {
+  let memory = {};
+  for (let row of rows) {
+    memory[row.memKey]= row.memValues.split(',')
+  }
+  return memory;
+
 }
 
 function script2rows(scr) {
@@ -76,6 +98,15 @@ function script2rows(scr) {
     }
   });
   return rows;
+}
+
+function rows2script(rows) {
+  let script = rows.map(row => ({
+    id: row.id,
+    in: row.in,
+    out: row.out.split(',')
+  }));
+  return script;
 }
 
 //-----------------------------------------------
@@ -155,6 +186,7 @@ function reducer(state, action) {
     }
 
     case 'changeView': {
+      console.log(state.cells, state.cells[action.value])
       switch (action.target) {
         case 'currentCellName': {
           return {
@@ -399,11 +431,15 @@ export default function ChatbotFileProvider({ firestore, children }) {
 
   const handleSave = useCallback(() => {
     // settings,scirpt,memoryに格納された最新情報をcellsに反映し
+    // memoryの形式をmapに戻して
     // firestoreにアップロード
     let biome = {};
     let main = {};
-    console.log(state.cells)
+    console.log(settings.id,state.botId);
+
+    // ↓memoryが正しくレンダリングされていない
     Object.keys(state.cells).forEach(cellName => {
+      console.log(cellName,settings.cellName)
       if (cellName === 'main.json') {
         if (settings.id === state.botId && settings.cellName === cellName) {
           main = { ...settings.cell }
@@ -412,11 +448,11 @@ export default function ChatbotFileProvider({ firestore, children }) {
         }
 
         if (memory.id === state.botId && memory.cellName === cellName) {
-          main.memory = memory.rows
+          main.memory = rows2memory(memory.rows)
         }
 
         if (script.id === state.botId && script.cellName === cellName) {
-          main.script = script.rows
+          main.script = rows2script(script.rows)
         }
       } else {
         if (settings.id === state.botId && settings.cellName === cellName) {
@@ -426,25 +462,30 @@ export default function ChatbotFileProvider({ firestore, children }) {
         }
 
         if (memory.id === state.botId && memory.cellName === cellName) {
-          biome[cellName].memory = memory.rows
+          biome[cellName].memory = rows2memory(memory.rows)
         }
 
         if (script.id === state.botId && script.cellName === cellName) {
-          biome[cellName].script = script.rows
+          biome[cellName].script = rows2script(script.rows)
         }
 
       }
     });
-    saveChatbot(firestore, state.botId, state.collection, main, biome);
-    dispatch({
-      type: 'update', newCells: {
-        'main.json': main,
-        ...biome
-      }
-    });
-    settings.saved();
-    memory.saved();
-    script.saved();
+
+    (async () => {
+      await saveChatbot(firestore, state.botId, state.collection, main, biome);
+
+      dispatch({
+        type: 'update', newCells: {
+          'main.json': main,
+          ...biome
+        }
+      });
+      settings.saved();
+      memory.saved();
+      script.saved();
+    })();
+
   }, [
     script, memory, settings, state.botId, state.collection, state.cells,
     firestore,
@@ -464,8 +505,12 @@ export default function ChatbotFileProvider({ firestore, children }) {
 
   const handleChangeBot = useCallback((botId, collection) => {
     (async () => {
-      const cells = await loadChatbot(firestore, botId, collection);
-      dispatch({ type: 'load', botId: botId, collection: collection, cells: cells });
+      const [maincell, cells] = await loadChatbot(firestore, botId, collection);
+
+      dispatch({
+        type: 'load', botId: botId, collection: collection, cells:
+          { 'main.json': maincell, ...cells }
+      });
     })();
 
   }, [firestore, dispatch]);

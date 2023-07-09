@@ -13,6 +13,7 @@ function reducer(state, action) {
   console.log(`useSettings - ${action.type}`);
   switch (action.type) {
     case 'load': {
+      console.log(action.cell)
       return {
         id: action.id,
         cellName: action.cellName,
@@ -26,6 +27,7 @@ function reducer(state, action) {
 
     case 'changeDesc': {
       return {
+        ...state,
         cell: {
           ...state.cell,
           description: action.description,
@@ -36,6 +38,7 @@ function reducer(state, action) {
 
     case 'changeValue': {
       return {
+        ...state,
         cell: {
           ...state.cell,
           [action.key]: action.value,
@@ -46,6 +49,7 @@ function reducer(state, action) {
 
     case 'changeCellOrder': {
       return {
+        ...state,
         cell: {
           ...state.cell,
           biome: [...action.cellOrder],
@@ -56,6 +60,7 @@ function reducer(state, action) {
 
     case 'addNewCell': {
       return {
+        ...state,
         cell: {
           ...state.cell,
           biome: [...state.cell.biome, action.cell],

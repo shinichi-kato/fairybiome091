@@ -33,11 +33,11 @@ export default function Settings() {
   */
 
   const chatbotFile = useContext(ChatbotFileContext);
-  const settings =chatbotFile.settings;
+  const settings = chatbotFile.settings;
   const memory = chatbotFile.memory;
-  
+
   function handleDeleteCurrentCell() {
-    
+
   }
 
   function handleSaveMemory(rows) {
@@ -68,7 +68,7 @@ export default function Settings() {
             <Input
               placeholder="チャットボットの説明"
               value={settings.cell.description}
-              onChange={e=>settings.changeDescription(e.target.value)}
+              onChange={e => settings.changeDescription(e.target.value)}
               maxRows={3}
               multiline
               fullWidth
@@ -79,7 +79,9 @@ export default function Settings() {
             />
           </Grid>
           <Grid item xs={12}>
-            <Typography variant="body2">ユーザはこのチャットボットを所有できない</Typography>
+            {chatbotFile.cells['main.json'].npc &&
+              <Typography variant="body2">ユーザはこのチャットボットを所有できない</Typography>
+            }
           </Grid>
 
         </>

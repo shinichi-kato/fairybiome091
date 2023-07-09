@@ -64,6 +64,11 @@ export default function EditorBreadcrumbs() {
       </MenuItem>));
   }
 
+  function handleClickChatbot(){
+    setAnchorEl(null);
+    chatbotFile.requestChangeChatbot();
+  }
+
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -76,7 +81,7 @@ export default function EditorBreadcrumbs() {
           href="#"
           sx={{ display: 'flex', alignItems: 'center' }}
           color="inherit"
-          onClick={chatbotFile.requestChangeChatbot}
+          onClick={handleClickChatbot}
         >
           <ChatbotIcon sx={{ mr: 0.5 }} fontSize="inherit" />
           {chatbotFile.botName}

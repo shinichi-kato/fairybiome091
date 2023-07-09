@@ -71,40 +71,31 @@ export async function loadChatbot(firestore, id, collection) {
 
   if (sourceSnap.exists()) {
     // sourceを読み込む
-    let data = sourceSnap.data();
-    sourceCells['main.json'] = {
-      ...data,
-      memory: new Map(data.memory ? Object.entries(data.memory) : [])
-    }
-
-    source = sourceCells['main.json'];
-
+    source = sourceSnap.data();
     for (let cellName of source.biome) {
       let cellRef = doc(firestore, collection, id, "biome", cellName);
       let cellSnap = await getDoc(cellRef);
-      let data = cellSnap.data();
-      sourceCells[cellName] = {
-        ...data,
-        memory: new Map(data.memory ? Object.entries(data.memory) : [])
-      };
+      sourceCells[cellName] = cellSnap.data();
     }
   } else {
     throw new Error(`chatbot ${id} not found`);
   }
 
-  return sourceCells;
+  return [source, sourceCells];
 }
 
-export function saveChatbot(firestore, id, collection, main, biome) {
+export async function saveChatbot(firestore, id, collection, main, biome) {
   const batch = writeBatch(firestore);
 
   const mainRef = doc(firestore, collection, id);
+  const now = new Date();
+  main.updatedAt = now.toLocaleString();
   batch.set(mainRef, main);
-  for (let cellName of main.biome) {
+  for (let cellName in Object.keys(biome)) {
     let cellRef = doc(firestore, collection, id, "biome", cellName);
     batch.set(cellRef, biome[cellName]);
   }
-
+  await batch.commit();
 }
 
 export async function uploadOrigin(firestore, name, main, biome) {
@@ -145,13 +136,12 @@ export async function branch(firestore, originName, uid, userName) {
   // destに書き込む
   const batch = writeBatch(firestore);
   const botId = source.npc ? originName : uid;
-
   const destRef = doc(firestore, "chatbot_active", botId);
-  batch.set(destRef, source);
+  batch.set(destRef, Object.assign({}, source));
 
   for (let cellName of source.biome) {
     let cellRef = doc(firestore, "chatbot_active", botId, "biome", cellName);
-    batch.set(cellRef, sourceCells[cellName]);
+    batch.set(cellRef, Object.assign({}, sourceCells[cellName]));
   }
 
   await batch.commit();
