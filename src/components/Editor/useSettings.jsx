@@ -13,7 +13,6 @@ function reducer(state, action) {
   console.log(`useSettings - ${action.type}`);
   switch (action.type) {
     case 'load': {
-      console.log(action.cell)
       return {
         id: action.id,
         cellName: action.cellName,

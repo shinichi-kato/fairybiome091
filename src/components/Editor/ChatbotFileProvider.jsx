@@ -32,7 +32,6 @@ const randomId = () => chanceId.guid();
 export const ChatbotFileContext = createContext();
 
 function getBotName(cell) {
-  console.log(cell)
   if (cell) {
     if ('memory' in cell) {
       for (let item of cell['memory']) {
@@ -46,7 +45,7 @@ function getBotName(cell) {
 }
 
 function memory2rows(mem) {
-  if(mem === null){
+  if (mem === null) {
     return null;
   }
 
@@ -63,12 +62,12 @@ function memory2rows(mem) {
       })
     });
     return rows;
-  } else if (typeof mem === 'object'){
+  } else if (typeof mem === 'object') {
     // bare objectの場合
-    Object.keys(mem).forEach(memKey=>{
+    Object.keys(mem).forEach(memKey => {
       rows.push({
-        id:randomId(),
-        memKey: memKey, 
+        id: randomId(),
+        memKey: memKey,
         memValues: mem[memKey].join(',')
       })
     });
@@ -79,33 +78,31 @@ function memory2rows(mem) {
 function rows2memory(rows) {
   let memory = {};
   for (let row of rows) {
-    memory[row.memKey]= row.memValues.split(',')
+    memory[row.memKey] = row.memValues.split(',')
   }
   return memory;
 
 }
 
 function script2rows(scr) {
-  let rows = scr.map(row => {
-    if ('id' in row) {
-      return row;
-    } else {
-      return {
-        'id': randomId(),
-        'in': row.in.join(','), 'out': row.out.join(','),
-        'intent': 'intent' in row ? row.intent : ""
-      }
-    }
-  });
+  let rows = scr.map(row => ({
+    id: row.id || randomId(),
+    'in': row.in.join(','),
+    'out': row.out.join(','),
+    'intent': row.intent || ""
+  }))
+
   return rows;
 }
 
 function rows2script(rows) {
-  let script = rows.map(row => ({
-    id: row.id,
-    in: row.in,
-    out: row.out.split(',')
-  }));
+  let script = rows.map(row => {
+    return {
+      id: row.id,
+      in: row.in.split(','),
+      out: row.out.split(',')
+    }
+  });
   return script;
 }
 
@@ -135,15 +132,14 @@ function reducer(state, action) {
       let cells = {};
       Object.keys(action.cells).forEach(key => {
         let cellValue = action.cells[key];
-        if ('memory' in cellValue) {
-          cells[key] = {
-            ...cellValue,
-            memory: memory2rows(cellValue.memory),
-            script: script2rows(cellValue.script)
-          };
-        } else {
-          cells[key] = cellValue;
-        }
+        cells[key] = { ...cellValue };
+
+        cells[key].memory = 'memory' in cellValue ?
+          memory2rows(cellValue.memory) : [];
+
+        cells[key].script = 'script' in cellValue ?
+          script2rows(cellValue.script) : [];
+
       });
       const currentCell = cells['main.json'];
       const botName = getBotName(currentCell);
@@ -186,7 +182,6 @@ function reducer(state, action) {
     }
 
     case 'changeView': {
-      console.log(state.cells, state.cells[action.value])
       switch (action.target) {
         case 'currentCellName': {
           return {
@@ -228,6 +223,7 @@ function reducer(state, action) {
     }
 
     case 'applyChangeRequest': {
+      // cellsを上書きして
       // cell切り替えの場合はcurrentPageをデフォルト状態に。
       // bot切り替えの場合はcurrentPageとcurrentCellNameをデフォルト状態に
       const target = state.saveRequest.target;
@@ -241,6 +237,7 @@ function reducer(state, action) {
               target: false,
               value: null,
             },
+            cells: action.newCells,
             currentCellName: value,
             currentCell: state.cells[value],
             currentPage: 'settings',
@@ -255,6 +252,7 @@ function reducer(state, action) {
               value: null,
             },
             botId: value,
+            cells: action.newCells,
             currentCellName: 'main.json',
             currentCell: state.cells['main.json'],
             currentPage: 'settings',
@@ -269,6 +267,7 @@ function reducer(state, action) {
               value: null,
             },
             [target]: value,
+            cells: action.newCells
           }
       }
     }
@@ -430,57 +429,55 @@ export default function ChatbotFileProvider({ firestore, children }) {
 
 
   const handleSave = useCallback(() => {
-    // settings,scirpt,memoryに格納された最新情報をcellsに反映し
+    // settings,scirpt,memoryに格納された最新情報をcellsに反映する。
     // memoryの形式をmapに戻して
     // firestoreにアップロード
-    let biome = {};
-    let main = {};
-    console.log(settings.id,state.botId);
+    console.assert(script.id === state.botId, "state.botIdとscript.idが一致していない")
 
-    // ↓memoryが正しくレンダリングされていない
+    // 最新状態に更新
+
+    let newCells = {};
+
     Object.keys(state.cells).forEach(cellName => {
-      console.log(cellName,settings.cellName)
-      if (cellName === 'main.json') {
-        if (settings.id === state.botId && settings.cellName === cellName) {
-          main = { ...settings.cell }
-        } else {
-          main = { ...state.cells }
-        }
-
-        if (memory.id === state.botId && memory.cellName === cellName) {
-          main.memory = rows2memory(memory.rows)
-        }
-
-        if (script.id === state.botId && script.cellName === cellName) {
-          main.script = rows2script(script.rows)
-        }
+      if (settings.cellName === cellName) {
+        newCells[cellName] = settings.cell
       } else {
-        if (settings.id === state.botId && settings.cellName === cellName) {
-          biome[cellName] = { ...settings.cell }
-        } else {
-          biome[cellName] = { ...state.cells }
-        }
-
-        if (memory.id === state.botId && memory.cellName === cellName) {
-          biome[cellName].memory = rows2memory(memory.rows)
-        }
-
-        if (script.id === state.botId && script.cellName === cellName) {
-          biome[cellName].script = rows2script(script.rows)
-        }
-
+        newCells[cellName] = state.cells[cellName]
+      }
+      if (memory.cellName === cellName) {
+        newCells[cellName].memory = memory.rows;
+      }
+      if (script.cellName === cellName) {
+        newCells[cellName].script = script.rows;
       }
     });
 
+    // 最新状態のデータを保存形式に戻す
+
+    let biome = {};
+    let main = {};
+
+    Object.keys(newCells).forEach(cellName => {
+      if (cellName === 'main.json') {
+        const newMain = newCells['main.json'];
+        main = {
+          ...newCells['main.json'],
+          memory: rows2memory(newMain.memory),
+          script: rows2script(newMain.script)
+        }
+
+      } else {
+        const newCell = newCells[cellName];
+        biome[cellName] = {
+          ...newCell,
+          memory: rows2memory(newCell.memory),
+          script: rows2script(newCell.script),
+        }
+      }
+    });
     (async () => {
       await saveChatbot(firestore, state.botId, state.collection, main, biome);
-
-      dispatch({
-        type: 'update', newCells: {
-          'main.json': main,
-          ...biome
-        }
-      });
+      dispatch({ type: 'applyChangeRequest', newCells: newCells});
       settings.saved();
       memory.saved();
       script.saved();
@@ -499,7 +496,11 @@ export default function ChatbotFileProvider({ firestore, children }) {
 
   function handleDispose() {
     // 変更を保存せずにページを遷移
-    dispatch({ type: 'applyChangeRequest' })
+    dispatch({ 
+      type: 'changeView', 
+      target: state.saveRequest.target, 
+      value: state.saveRequest.value
+    })
   }
 
 

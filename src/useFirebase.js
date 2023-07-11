@@ -76,6 +76,9 @@ export async function loadChatbot(firestore, id, collection) {
       let cellRef = doc(firestore, collection, id, "biome", cellName);
       let cellSnap = await getDoc(cellRef);
       sourceCells[cellName] = cellSnap.data();
+      if (!('memory' in sourceCells[cellName])) {
+        sourceCells[cellName].memory = {};
+      }
     }
   } else {
     throw new Error(`chatbot ${id} not found`);
@@ -91,7 +94,7 @@ export async function saveChatbot(firestore, id, collection, main, biome) {
   const now = new Date();
   main.updatedAt = now.toLocaleString();
   batch.set(mainRef, main);
-  for (let cellName in Object.keys(biome)) {
+  for (let cellName of Object.keys(biome)) {
     let cellRef = doc(firestore, collection, id, "biome", cellName);
     batch.set(cellRef, biome[cellName]);
   }

@@ -260,7 +260,6 @@ export default function ScriptDataGrid(props) {
 
   function handleRowEditStop(params) {
     const reason = params.reason;
-    console.log("rowEditStop",params)
     if (reason === 'enterKeyDown' && params.row.memKey === "") {
 
       dispatch({ type: 'setAppendMode', appendMode: true });
