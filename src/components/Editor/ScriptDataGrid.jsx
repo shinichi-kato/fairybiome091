@@ -153,7 +153,7 @@ export default function ScriptDataGrid(props) {
   // 以下のpropsを与えること
   const {
     rowModel, fieldToFocus, scriptRows, scriptColumns,
-    handleSave, isRowEditable, lastInsertRowId,scriptRowEditStop
+    handleSave, isRowEditable, lastInsertRowId, scriptRowEditStop
   } = props;
 
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -172,22 +172,22 @@ export default function ScriptDataGrid(props) {
     }
   }, [rowModel, state.rowModel, fieldToFocus, state.fieldToFocus]);
 
-  
+
   // -------------------------------------------------------------------
   // ブランク行の削除
 
-  const removeBlankRow = useCallback(()=>{
+  const removeBlankRow = useCallback(() => {
     // 行の削除はupdateRowsで処理できるため、元データの更新はしない。
 
     const oldRows = apiRef.current.getRowModels();
-    oldRows.forEach((row,id)=>{
-      if(isInclusive(state.rowModel, row)){
+    oldRows.forEach((row, id) => {
+      if (isInclusive(state.rowModel, row)) {
         apiRef.current.updateRows([{ id: id, _action: 'delete' }]);
       }
     });
-    
-  },[apiRef, state.rowModel]);
-  
+
+  }, [apiRef, state.rowModel]);
+
   // -------------------------------------------------------------------
   // 行の追加
 
@@ -196,10 +196,10 @@ export default function ScriptDataGrid(props) {
     // updatedRowはrowUpdateで渡される更新後の内容
 
     let newRowId;
-    let newRows=[];
+    let newRows = [];
     const oldRows = apiRef.current.getRowModels();
-    
-    if( state.rowSelectionModel.length !== 0) {
+
+    if (state.rowSelectionModel.length !== 0) {
       // 行を選択してボタンを押下した場合は選択行の次の行に
       // modelを追加してeditRequest
       const currentRowId = state.rowSelectionModel[0];
@@ -213,14 +213,14 @@ export default function ScriptDataGrid(props) {
 
     } else {
 
-      if(updatedRow){
+      if (updatedRow) {
         // 行を入力した後(=updatedRowがある)はその行を変更して
         // 次の行を追加する
         oldRows.forEach((row, id) => {
-          if(updatedRow.id === id){
+          if (updatedRow.id === id) {
             newRows.push(updatedRow);
             newRowId = randomId();
-            newRows.push({id: newRowId, ...state.rowModel});
+            newRows.push({ id: newRowId, ...state.rowModel });
           } else {
             newRows.push({ id: id, ...row });
           }
@@ -234,9 +234,9 @@ export default function ScriptDataGrid(props) {
         newRowId = randomId();
         newRows.push({ id: newRowId, ...state.rowModel });
       }
-     }
+    }
     handleSave(newRows, newRowId)
-    dispatch({ type: 'editRequest', editRequestRowId: newRowId });   
+    dispatch({ type: 'editRequest', editRequestRowId: newRowId });
 
   }, [apiRef, handleSave,
     state.rowModel, state.rowSelectionModel]);
@@ -259,15 +259,11 @@ export default function ScriptDataGrid(props) {
   // editモードからの抜けかたでappendModeを調整
 
   function handleRowEditStop(params) {
-    const reason = params.reason;
-    if (reason === 'enterKeyDown' && params.row.memKey === "") {
+    if (scriptRowEditStop) {
+      const mode = scriptRowEditStop(params);
+      dispatch({ type: 'setAppendMode', appendMode: mode==="append" });
 
-      dispatch({ type: 'setAppendMode', appendMode: true });
-    } else {
-      dispatch({ type: 'setAppendMode', appendMode: false })
     }
-
-    scriptRowEditStop && scriptRowEditStop(params);
   }
 
   // -------------------------------------------------------------------
@@ -304,7 +300,11 @@ export default function ScriptDataGrid(props) {
   function handleClickSave() {
     // 現在apiが保持しているrowsをsave
     // saveボタンのように行の追加が伴わない場合
-    let rows = apiRef.current.getRowModels();
+    let rowsMap = apiRef.current.getRowModels();
+    let rows = [];
+    rowsMap.forEach((val,key)=>{
+      rows.push({...val});
+    })
     props.handleSave(rows);
 
   }

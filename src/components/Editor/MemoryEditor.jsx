@@ -3,7 +3,7 @@
   DataTableを使ったMemoryEditor
 */
 
-import React, { useContext,useRef } from 'react';
+import React, { useContext, useRef } from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import { GridEditInputCell } from '@mui/x-data-grid';
 import ScriptDataGrid from './ScriptDataGrid';
@@ -22,15 +22,26 @@ function isRowEditable({ field, row }) {
 export default function MemoryEditor() {
   const chatbotFile = useContext(ChatbotFileContext);
   const memory = chatbotFile.memory;
-  const keyMapRef=useRef(new Map());
+  const keyMapRef = useRef(new Map());
 
   // ----------------------------------------------------------------
+  // addRowでの行追加が反映されたら編集モードへ
   // keyMapの取得と更新
 
   function handleRowEditStop(params) {
+
     // 追加は対応するが削除は未対応
     const memKey = params.row.memKey;
-    keyMapRef.current.set(memKey,true);
+    keyMapRef.current.set(memKey, true);
+
+    // editモードからの抜けかたでappendModeを調整
+    // params.row.memKeyの内容は変更前。新規作成した行でEnter終わりの場合
+    // 次の行を作る
+    let action="";
+    if(params.reason === 'enterKeyDown' && params.row.memKey===""){
+      action="append"
+    }
+    return action;
   }
 
   //-----------------------------------------------------------------

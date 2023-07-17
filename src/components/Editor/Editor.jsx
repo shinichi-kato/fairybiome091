@@ -34,7 +34,9 @@ export default function Editor({ firestore }) {
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
-            <IconButton>
+            <IconButton
+              onClick={chatbotFile.requestExit}
+            >
               <NavigateBeforeIcon />
             </IconButton>
             {

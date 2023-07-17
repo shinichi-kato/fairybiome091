@@ -20,8 +20,10 @@ const initialState = {
 }
 
 function reducer(state, action) {
+  console.log(`useDataTable ${action.type}`);
   switch (action.type) {
     case 'setRows': {
+      console.log(action)
       let rows = action.newRows.map(row =>
         'id' in row ? row : { 'id': randomId(), ...row });
 
@@ -29,8 +31,8 @@ function reducer(state, action) {
         rows: rows,
         hasChanged: action.id === state.id && action.cellName === state.cellName,
         lastInsertRowId: action.lastInsertRowId || false,
-        id: action.id,
-        cellName: action.cellName
+        id: action.id || state.id,
+        cellName: action.cellName || state.cellName
       }
     }
 
@@ -56,8 +58,9 @@ export function useDataTable(id, cellName, rows) {
   }, [id, rows, cellName]);
 
   const update = useCallback((newRows, lastInsertRowId) => {
-    dispatch({ type: 'setRows', newRows, lastInsertRowId });
-  }, []);
+    dispatch({ type: 'setRows', newRows:newRows, lastInsertRowId:lastInsertRowId,
+      id:id, cellName: cellName });
+  }, [id, cellName]);
 
   const saved = useCallback(() => {
     dispatch({ type: 'saved' });

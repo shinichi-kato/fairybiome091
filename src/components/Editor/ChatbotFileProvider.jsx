@@ -17,6 +17,7 @@ adminはすべてのデータを編集でき、チャットボット選択画面
 */
 
 import React, { useReducer, createContext, useCallback } from 'react';
+import { navigate } from "gatsby";
 import { useSettings } from './useSettings';
 import { useDataTable } from './useDataTable';
 
@@ -158,17 +159,6 @@ function reducer(state, action) {
         currentCellName: 'main.json',
         currentPage: 'settings'
       }
-    }
-
-    case 'requestChangeChatbot': {
-      return {
-        ...state,
-        saveRequest: {
-          target: 'botId',
-          value: false,
-        }
-      }
-
     }
 
     case 'requestChangeView': {
@@ -392,6 +382,18 @@ export default function ChatbotFileProvider({ firestore, children }) {
 
   // -----------------------------------------------------------------------
   // 変更があったらuploadするか確認してページ遷移
+  const requestExit = useCallback(()=>{
+    if (memory.hasChanged || script.hasChanged || settings.hasChanged || state.hasChanged) {
+      dispatch({ type: 'requestChangeView', target: 'exit', value: null });
+    } else {
+      navigate("/");
+    }
+  }, [
+    memory.hasChanged,
+    script.hasChanged,
+    settings.hasChanged,
+    state.hasChanged,
+    dispatch]);
 
   const requestChangeChatbot = useCallback(() => {
     if (memory.hasChanged || script.hasChanged || settings.hasChanged || state.hasChanged) {
@@ -432,23 +434,27 @@ export default function ChatbotFileProvider({ firestore, children }) {
     // settings,scirpt,memoryに格納された最新情報をcellsに反映する。
     // memoryの形式をmapに戻して
     // firestoreにアップロード
-    console.assert(script.id === state.botId, "state.botIdとscript.idが一致していない")
+    console.assert(script.id === state.botId, 
+      `state.botId(${state.botId})とscript.id(${script.id})が一致していない`);
 
     // 最新状態に更新
 
     let newCells = {};
 
     Object.keys(state.cells).forEach(cellName => {
+      console.log(cellName, script.cellName)
       if (settings.cellName === cellName) {
         newCells[cellName] = settings.cell
       } else {
         newCells[cellName] = state.cells[cellName]
       }
       if (memory.cellName === cellName) {
-        newCells[cellName].memory = memory.rows;
+        newCells[cellName].memory = memory.rows.map(row=>({...row}));
       }
       if (script.cellName === cellName) {
-        newCells[cellName].script = script.rows;
+        console.log(script.rows);
+        newCells[cellName].script = script.rows.map(row=>({...row}));
+        console.log(newCells[cellName].script);
       }
     });
 
@@ -477,6 +483,9 @@ export default function ChatbotFileProvider({ firestore, children }) {
     });
     (async () => {
       await saveChatbot(firestore, state.botId, state.collection, main, biome);
+      if(state.saveRequest.target === 'exit'){
+        navigate('/');
+      }
       dispatch({ type: 'applyChangeRequest', newCells: newCells});
       settings.saved();
       memory.saved();
@@ -485,7 +494,7 @@ export default function ChatbotFileProvider({ firestore, children }) {
 
   }, [
     script, memory, settings, state.botId, state.collection, state.cells,
-    firestore,
+    firestore,state.saveRequest.target
   ]);
 
 
@@ -522,6 +531,7 @@ export default function ChatbotFileProvider({ firestore, children }) {
       value={{
         addNewCell: addNewCell,
         changeCellName: changeCellName,
+        requestExit: requestExit,
         requestChangeChatbot: requestChangeChatbot,
         requestChangeCurrentCellName: requestChangeCurrentCellName,
         requestChangeCurrentPage: requestChangeCurrentPage,

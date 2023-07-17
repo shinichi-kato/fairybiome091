@@ -52,7 +52,14 @@ export default function ScriptEditor() {
 
   function handleRowEditStop(params){
     // intentKeyの更新
-  }
+    // editモードからの抜けかたでappendModeを調整
+    // enterKeyDown→add
+    // tabKeyDown→右セルへ
+    let action="";
+    if(params.reason === 'enterKeyDown' && params.row.out===""){
+      action="append"
+    }
+    return action;  }
 
   const columns = [
     {
@@ -70,6 +77,7 @@ export default function ScriptEditor() {
   function handleSave(newRows, lastInsertRowId) {
     script.update(newRows, lastInsertRowId);
   }
+  
   return (
     <ScriptDataGrid
       sx={{
